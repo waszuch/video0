@@ -32,7 +32,7 @@ export default async function Home() {
 					</Link>
 				</div>
 				<div className="flex flex-col items-center gap-2">
-					<p className="text-2xl text-white">Hello World</p>
+					<Link href="/login">Login</Link>
 				</div>
 			</div>
 		</main>
