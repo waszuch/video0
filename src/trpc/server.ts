@@ -1,30 +1,64 @@
 import "server-only";
 
 import { createHydrationHelpers } from "@trpc/react-query/rsc";
-import { headers } from "next/headers";
+import { unstable_cache } from "next/cache";
+import type { ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adapters/request-cookies";
+import { cookies, headers } from "next/headers";
 import { cache } from "react";
+import { appRouter } from "@/server/api/root";
+import { createCallerFactory, createTRPCContext } from "@/server/api/trpc";
+import { getServerQueryClient } from "./getServerQueryClient";
 
-import { type AppRouter, createCaller } from "@/server/api/root";
-import { createTRPCContext } from "@/server/api/trpc";
-import { createQueryClient } from "./query-client";
+export const getCachedTRPCContext = cache(
+	(cookieStore: ReadonlyRequestCookies, _headers: Headers) => {
+		return createTRPCContext(cookieStore, { headers: _headers });
+	},
+);
 
 /**
  * This wraps the `createTRPCContext` helper and provides the required context for the tRPC API when
  * handling a tRPC call from a React Server Component.
  */
-const createContext = cache(async () => {
+
+export const createApi = async () => {
 	const heads = new Headers(await headers());
+	const cookieStore = await cookies();
+
 	heads.set("x-trpc-source", "rsc");
 
-	return createTRPCContext({
-		headers: heads,
-	});
-});
+	const caller = createCallerFactory(appRouter);
 
-const getQueryClient = cache(createQueryClient);
-const caller = createCaller(createContext);
+	return caller(() => getCachedTRPCContext(cookieStore, heads));
+};
 
-export const { trpc: api, HydrateClient } = createHydrationHelpers<AppRouter>(
-	caller,
-	getQueryClient,
-);
+export const cacheWithCookies =
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+		<T extends (...args: any[]) => any>(
+			func: (_api: ReturnType<typeof createApi>) => T,
+			keyParts?: Parameters<typeof unstable_cache>[1],
+			options?: Parameters<typeof unstable_cache>[2],
+		) =>
+		async (...args: Parameters<T>) => {
+			const createApiCache = createApi();
+
+			return unstable_cache(
+				func(createApiCache),
+				keyParts,
+				options,
+			)(...args) as ReturnType<T>;
+		};
+
+const caller = async (cookieStore: ReadonlyRequestCookies, headers: Headers) =>
+	createCallerFactory(appRouter)(
+		await getCachedTRPCContext(cookieStore, headers),
+	);
+
+export const getHydrationHelpers = async (
+	cookieStore: ReadonlyRequestCookies,
+	headers: Headers,
+) =>
+	createHydrationHelpers<typeof appRouter>(
+		await caller(cookieStore, headers),
+		getServerQueryClient,
+	);
