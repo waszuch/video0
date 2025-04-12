@@ -8,5 +8,5 @@ export default {
 	dbCredentials: {
 		url: env.DATABASE_URL,
 	},
-	tablesFilter: ["video0_*"],
+	tablesFilter: ["*"],
 } satisfies Config;
