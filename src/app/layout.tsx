@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import { headers } from "next/headers";
 import { CSPostHogProvider } from "@/components/Posthog/PosthogProvider";
+import { Toaster } from "@/components/ui/sonner";
 import { TRPCReactProvider } from "@/trpc/react";
 
 export const metadata: Metadata = {
@@ -27,6 +28,7 @@ export default async function RootLayout({
 				<CSPostHogProvider>
 					<TRPCReactProvider headers={_headers}>{children}</TRPCReactProvider>
 				</CSPostHogProvider>
+				<Toaster />
 			</body>
 		</html>
 	);

@@ -3,7 +3,7 @@
 import type { Session, User } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
 import posthog from "posthog-js";
-import React, {
+import {
 	createContext,
 	type ReactNode,
 	useContext,
@@ -11,7 +11,6 @@ import React, {
 	useState,
 } from "react";
 import { supabase } from "@/server/supabase/supabaseClient";
-import { api } from "@/trpc/react";
 
 export const AuthContext = createContext<{
 	user: User | null;
@@ -73,8 +72,6 @@ export const AuthProvider = ({
 
 	const router = useRouter();
 
-	const utils = api.useUtils();
-	const trpcUtils = api.useUtils();
 	useEffect(() => {
 		void supabase()
 			.auth.getSession()
@@ -129,7 +126,7 @@ export const AuthProvider = ({
 		return () => {
 			authListener.subscription.unsubscribe();
 		};
-	}, [router, utils]);
+	}, [router]);
 
 	const value = {
 		session: userSession,
