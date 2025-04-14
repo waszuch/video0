@@ -31,7 +31,7 @@ export const createTRPCContext = async (
 ) => {
 	const refreshToken = cookieStore.get("refresh-token")?.value ?? "";
 	const accessToken = cookieStore.get("access-token")?.value ?? "";
-	const { data } = await getServiceSupabase().auth.setSession({
+	const { data, error } = await getServiceSupabase().auth.setSession({
 		access_token: accessToken,
 		refresh_token: refreshToken,
 	});

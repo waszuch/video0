@@ -3,7 +3,6 @@
 
 import { sql } from "drizzle-orm";
 import {
-	index,
 	pgTable,
 	pgTableCreator,
 	text,

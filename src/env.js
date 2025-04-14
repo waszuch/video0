@@ -12,6 +12,8 @@ export const env = createEnv({
 			.enum(["development", "test", "production"])
 			.default("development"),
 		SUPABASE_SERVICE_KEY: z.string().min(1),
+		OPENROUTER_API_KEY: z.string().min(1),
+		REPLICATE_API_TOKEN: z.string().min(1),
 	},
 
 	/**
@@ -36,6 +38,8 @@ export const env = createEnv({
 		NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
 		SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY,
 		// NEXT_PUBLIC_CLIENTVAR: process.env.NEXT_PUBLIC_CLIENTVAR,
+		OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
+		REPLICATE_API_TOKEN: process.env.REPLICATE_API_TOKEN,
 	},
 	/**
 	 * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
