@@ -329,17 +329,20 @@ export async function POST(request: Request) {
 					voice_id: selectedVoice,
 					instrumental_id: selectedInstrumental,
 				};
-				console.log("trying to ");
+				console.log("trying to generate song");
 				const output = await replicate.run("minimax/music-01", {
 					input,
 				});
 				const fileName = `${user.id}-${Date.now()}-${selectedVoice}-${selectedInstrumental}.mp3`;
-
+				console.log("trying to upload song");
 				// @ts-expect-error
 				const blob = await output.blob(); // get the real binary blob
 				const buffer = await blob.arrayBuffer();
 				const uint8Array = new Uint8Array(buffer);
-				await supabase().storage.from("songs").upload(fileName, uint8Array);
+				const { error } = await supabase()
+					.storage.from("songs")
+					.upload(fileName, uint8Array);
+				if (error) throw error;
 				const { data: urlResult } = await supabase()
 					.storage.from("songs")
 					.createSignedUrl(fileName, 60 * 60 * 24 * 365 * 99999);
