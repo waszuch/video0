@@ -15,7 +15,7 @@ export const GoogleLoginButton = () => {
 				supabase().auth.signInWithOAuth({
 					provider: "google",
 					options: {
-						redirectTo: `${getBaseUrl()}/generate`,
+						redirectTo: `${getBaseUrl()}/chat/random-id-we-need-to-update-it-later`,
 					},
 				});
 			}}
