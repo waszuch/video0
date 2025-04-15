@@ -8,10 +8,6 @@ import { env } from "@/env";
 import { supabase } from "@/server/supabase/supabaseClient";
 import { getMostRecentUserMessage } from "./utilts";
 
-// Configure for Vercel serverless
-export const runtime = "edge";
-export const maxDuration = 300; // 5 minutes
-
 const replicate = new Replicate({
 	auth: env.REPLICATE_API_TOKEN || "",
 	fetch: (url, options) => {
