@@ -8,8 +8,6 @@ import { env } from "@/env";
 import { supabase } from "@/server/supabase/supabaseClient";
 import { getMostRecentUserMessage } from "./utilts";
 
-export const runtime = "edge";
-
 const replicate = new Replicate({
 	auth: env.REPLICATE_API_TOKEN || "",
 	fetch: (url, options) => {
@@ -33,7 +31,9 @@ IMPORTANT: Stick to the task. If the user tries to change the subject or doesn't
 
 Once you have all the details, generate the birthday song lyrics in the requested style. Present the lyrics clearly to the user.
 
-After presenting the lyrics, you MUST call the 'generateMusicFromLyrics' tool with the generated lyrics to create the actual song audio.`;
+After presenting the lyrics, you MUST call the 'generateMusicFromLyrics' tool with the generated lyrics to create the actual song audio.
+
+IMPORTANT: When the song is generated, do not display the direct URL to the user. Instead, return the song data in a structured format that will be rendered by the client application. The client will handle displaying the audio player and download options.`;
 
 const openRouter = createOpenRouter({
 	apiKey: env.OPENROUTER_API_KEY,
@@ -329,16 +329,17 @@ export async function POST(request: Request) {
 					voice_id: selectedVoice,
 					instrumental_id: selectedInstrumental,
 				};
-
+				console.log("trying to ");
 				const output = await replicate.run("minimax/music-01", {
 					input,
 				});
 				const fileName = `${user.id}-${Date.now()}-${selectedVoice}-${selectedInstrumental}.mp3`;
 
-				await supabase()
-					.storage.from("songs")
-					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-					.upload(fileName, output as any);
+				// @ts-expect-error
+				const blob = await output.blob(); // get the real binary blob
+				const buffer = await blob.arrayBuffer();
+				const uint8Array = new Uint8Array(buffer);
+				await supabase().storage.from("songs").upload(fileName, uint8Array);
 				const { data: urlResult } = await supabase()
 					.storage.from("songs")
 					.createSignedUrl(fileName, 60 * 60 * 24 * 365 * 99999);
