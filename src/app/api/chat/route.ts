@@ -8,6 +8,8 @@ import { env } from "@/env";
 import { supabase } from "@/server/supabase/supabaseClient";
 import { getMostRecentUserMessage } from "./utilts";
 
+export const runtime = "edge";
+
 const replicate = new Replicate({
 	auth: env.REPLICATE_API_TOKEN || "",
 	fetch: (url, options) => {
