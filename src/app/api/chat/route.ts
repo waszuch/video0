@@ -333,7 +333,10 @@ export async function POST(request: Request) {
 				});
 				const fileName = `${user.id}-${Date.now()}-${selectedVoice}-${selectedInstrumental}.mp3`;
 
-				await supabase().storage.from("songs").upload(fileName, output);
+				await supabase()
+					.storage.from("songs")
+					// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+					.upload(fileName, output as any);
 				const { data: urlResult } = await supabase()
 					.storage.from("songs")
 					.createSignedUrl(fileName, 60 * 60 * 24 * 365 * 99999);
