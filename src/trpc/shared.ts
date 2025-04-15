@@ -1,6 +1,6 @@
 export function getBaseUrl() {
 	if (process.env.NODE_ENV === "production") {
-		return "";
+		return "https://video0-nine.vercel.app";
 	}
 	if (process.env.NODE_ENV === "development") {
 		return `http://localhost:${process.env.PORT ?? 3000}`;
