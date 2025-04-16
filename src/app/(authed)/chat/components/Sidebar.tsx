@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { UserDropdown } from "@/components/UserDropdown";
 import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
 
@@ -44,6 +45,7 @@ export default function Sidebar() {
 					))}
 				</ul>
 			</nav>
+			<UserDropdown />
 		</aside>
 	);
 }
