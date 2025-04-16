@@ -22,7 +22,6 @@ export async function middleware(request: NextRequest) {
 			/^\/ingest-internal-service/,
 			"",
 		);
-		console.info("user redirected to posthog");
 
 		return NextResponse.rewrite(posthogUrl, {
 			headers: requestHeaders,
