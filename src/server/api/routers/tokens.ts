@@ -58,7 +58,10 @@ export const tokensRouter = createTRPCRouter({
 				const checkoutUrl = await polar.checkouts.create({
 					customerId: customer.id,
 					customerExternalId: ctx.user.id,
-					successUrl: `https://video0.dev/chat/${input.chatId ?? ""}`,
+					successUrl:
+						env.NODE_ENV === "production"
+							? `https://video0.dev/chat/${input.chatId ?? ""}`
+							: `http://localhost:3000/chat/${input.chatId ?? ""}`,
 					products: [
 						POLAR_PRODUCT_IDS["3_TOKENS"].id,
 						POLAR_PRODUCT_IDS["5_TOKENS"].id,
@@ -80,7 +83,10 @@ export const tokensRouter = createTRPCRouter({
 				const checkoutUrl = await polar.checkouts.create({
 					customerId: customer.id,
 					customerExternalId: ctx.user.id,
-					successUrl: `https://video0.dev/chat/${input.chatId ?? ""}`,
+					successUrl:
+						env.NODE_ENV === "production"
+							? `https://video0.dev/chat/${input.chatId ?? ""}`
+							: `http://localhost:3000/chat/${input.chatId ?? ""}`,
 					products: [
 						POLAR_PRODUCT_IDS["3_TOKENS"].id,
 						POLAR_PRODUCT_IDS["5_TOKENS"].id,
