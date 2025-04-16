@@ -1,12 +1,21 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import { createDataStreamResponse, streamText, type UIMessage } from "ai";
+import {
+	appendResponseMessages,
+	createDataStreamResponse,
+	generateText,
+	type Message,
+	streamText,
+	type UIMessage,
+} from "ai";
 import Replicate from "replicate";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { getServerUser } from "@/components/AuthProvider/getServerUser";
 import { env } from "@/env";
+import type { GeneratedAssetsData } from "@/server/db/schema";
 import { supabase } from "@/server/supabase/supabaseClient";
-import { getMostRecentUserMessage } from "./utilts";
+import { getChatById, saveChat, saveMessages } from "./chatQueries";
+import { getMostRecentUserMessage, getTrailingMessageId } from "./utilts";
 
 const replicate = new Replicate({
 	auth: env.REPLICATE_API_TOKEN || "",
@@ -282,6 +291,23 @@ const songs = {
 	},
 } as const;
 
+async function generateTitleFromUserMessage({ message }: { message: Message }) {
+	const { text: title } = await generateText({
+		model: openRouter(""),
+		system: `
+	  - You will generate a short, project-specific title for a birthday song chat based on the user's first message.
+	  - If the message contains a name, use a format like 'Birthday of [name]' or 'Birthday Song for [name]'.
+	  - If the name is not clear, use a generic but festive title like 'Birthday Song Request' or 'Birthday Celebration'.
+	  - Ensure the title is not more than 80 characters long.
+	  - Do not use quotes or colons in the title.
+	  - The title should be friendly and clearly related to a birthday song or celebration.
+	  `,
+		prompt: JSON.stringify(message),
+	});
+
+	return title;
+}
+
 export async function POST(request: Request) {
 	try {
 		const {
@@ -302,6 +328,29 @@ export async function POST(request: Request) {
 		if (!userMessage) {
 			return new Response("No user message found", { status: 400 });
 		}
+
+		const chat = await getChatById({ id: id, profileId: user.id });
+
+		if (!chat) {
+			const title = await generateTitleFromUserMessage({
+				message: userMessage,
+			});
+
+			await saveChat({ id, profileId: user.id, title });
+		}
+
+		await saveMessages({
+			messages: [
+				{
+					chatId: id,
+					id: userMessage.id,
+					role: "user",
+					parts: userMessage.parts,
+					attachments: userMessage.experimental_attachments ?? [],
+					createdAt: new Date(),
+				},
+			],
+		});
 
 		const generateMusicFromLyrics = async ({
 			lyrics,
@@ -346,11 +395,14 @@ export async function POST(request: Request) {
 				const { data: urlResult } = await supabase()
 					.storage.from("songs")
 					.createSignedUrl(fileName, 60 * 60 * 24 * 365 * 99999);
-
+				if (!urlResult?.signedUrl) {
+					throw new Error("Failed to generate song");
+				}
 				return {
-					type: "song",
+					type: "birthdaySong",
 					songUrl: urlResult?.signedUrl,
-				};
+					lyrics: lyrics,
+				} satisfies GeneratedAssetsData;
 			} catch (error) {
 				console.error("Error:", error);
 				return "Sorry, I encountered an error.";
@@ -380,12 +432,49 @@ export async function POST(request: Request) {
 							execute: (params) => generateMusicFromLyrics(params),
 						},
 					},
+					onFinish: async ({ response }) => {
+						if (user.id) {
+							try {
+								const assistantId = getTrailingMessageId({
+									messages: response.messages.filter(
+										(message) => message.role === "assistant",
+									),
+								});
+
+								if (!assistantId) {
+									throw new Error("No assistant message found!");
+								}
+
+								const [, assistantMessage] = appendResponseMessages({
+									messages: [userMessage],
+									responseMessages: response.messages,
+								});
+
+								await saveMessages({
+									messages: [
+										{
+											id: assistantId,
+											chatId: id,
+											role: assistantMessage?.role ?? "",
+											parts: assistantMessage?.parts,
+											attachments:
+												assistantMessage?.experimental_attachments ?? [],
+											createdAt: new Date(),
+										},
+									],
+								});
+							} catch (_) {
+								console.error("Failed to save chat");
+							}
+						}
+					},
 				});
 
 				result.consumeStream();
 
 				result.mergeIntoDataStream(dataStream);
 			},
+
 			onError: () => {
 				return "Oops, an error occurred!";
 			},

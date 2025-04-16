@@ -1,52 +1,37 @@
+import type { UIMessage } from "ai";
+import type { Attachment } from "ai";
+import { notFound } from "next/navigation";
 import { Chat } from "@/components/Chat";
+import type { DBMessage } from "@/server/db/schema";
+import { createApi } from "@/trpc/server";
 
 export default async function Page(props: { params: Promise<{ id: string }> }) {
 	const params = await props.params;
 	const { id } = params;
-	// const chat = await getChatById({ id });
 
-	// if (!chat) {
-	// 	notFound();
-	// }
+	const api = await createApi();
 
-	// const messagesFromDb = await getMessagesByChatId({
-	// 	id,
-	// });
+	const foundChat = await api.chats.getChatMessagesByChatId({
+		chatId: id,
+	});
 
-	// function convertToUIMessages(messages: Array<DBMessage>): Array<UIMessage> {
-	// 	return messages.map((message) => ({
-	// 		id: message.id,
-	// 		parts: message.parts as UIMessage["parts"],
-	// 		role: message.role as UIMessage["role"],
-	// 		// Note: content will soon be deprecated in @ai-sdk/react
-	// 		content: "",
-	// 		createdAt: message.createdAt,
-	// 		experimental_attachments:
-	// 			(message.attachments as Array<Attachment>) ?? [],
-	// 	}));
-	// }
-
-	// const cookieStore = await cookies();
-	// const chatModelFromCookie = cookieStore.get("chat-model");
-
-	// if (!chatModelFromCookie) {
-	// 	return (
-	// 		<>
-	// 			<Chat
-	// 				id={chat.id}
-	// 				initialMessages={convertToUIMessages(messagesFromDb)}
-	// 				selectedChatModel={DEFAULT_CHAT_MODEL}
-	// 				selectedVisibilityType={chat.visibility}
-	// 				isReadonly={session?.user?.id !== chat.userId}
-	// 			/>
-	// 			<DataStreamHandler id={id} />
-	// 		</>
-	// 	);
-	// }
+	if (!foundChat) {
+		notFound();
+	}
 
 	return (
-		<>
-			<Chat id={id} initialMessages={[]} />
-		</>
+		<Chat id={id} initialMessages={convertToUIMessages(foundChat.messages)} />
 	);
+}
+
+function convertToUIMessages(messages: Array<DBMessage>): Array<UIMessage> {
+	return messages.map((message) => ({
+		id: message.id,
+		parts: message.parts as UIMessage["parts"],
+		role: message.role as UIMessage["role"],
+		// Note: content will soon be deprecated in @ai-sdk/react
+		content: "",
+		createdAt: message.createdAt,
+		experimental_attachments: (message.attachments as Array<Attachment>) ?? [],
+	}));
 }
