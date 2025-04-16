@@ -38,6 +38,16 @@ const PurePreviewMessage = ({ message }: { message: UIMessage }) => {
 							const key = `message-${message.id}-part-${index}`;
 
 							if (type === "text") {
+								// Skip rendering text parts that contain raw JSON of video data
+								// This prevents showing the raw JSON output in the chat
+								if (part.text && (
+									part.text.includes('"type":"birthdayVideo"') ||
+									part.text.includes('"imagesUrl"') ||
+									part.text.includes('"videoUrl"') && part.text.includes('"songUrl"') && part.text.includes('"lyrics"')
+								)) {
+									return null;
+								}
+								
 								return (
 									<div key={key} className="flex flex-row gap-2 items-start">
 										<div
@@ -62,13 +72,15 @@ const PurePreviewMessage = ({ message }: { message: UIMessage }) => {
 										<div
 											key={toolCallId}
 											className={cn({
-												skeleton: ["generateMusicFromLyrics"].includes(
+												skeleton: ["generateMusicFromLyrics", "generateVideoFromMusic"].includes(
 													toolName,
 												),
 											})}
 										>
 											{toolName === "generateMusicFromLyrics" ? (
 												<SongGeneratingIndicator />
+											) : toolName === "generateVideoFromMusic" ? (
+												<VideoGeneratingIndicator />
 											) : null}
 										</div>
 									);
@@ -87,7 +99,11 @@ const PurePreviewMessage = ({ message }: { message: UIMessage }) => {
 									}
 									if (parsedResult.type === "birthdayVideo") {
 										return (
-											<div key={toolCallId}>birthday video display @todo</div>
+											<div key={toolCallId}>
+												<VideoPlayer 
+													videoData={parsedResult} 
+												/>
+											</div>
 										);
 									}
 								}
@@ -171,6 +187,70 @@ const SongGeneratingIndicator = () => {
 					Generating your birthday song... This may take a moment
 				</div>
 			</div>
+		</div>
+	);
+};
+
+const VideoGeneratingIndicator = () => {
+	return (
+		<div className="mt-2 p-3 bg-muted/50 rounded-md animate-pulse">
+			<div className="flex items-center space-x-2">
+				<div className="w-4 h-4 rounded-full bg-primary/70" />
+				<div className="text-sm">
+					Creating your music video... This may take a few moments
+				</div>
+			</div>
+		</div>
+	);
+};
+
+const VideoPlayer = ({ videoData }: { videoData: { videoUrl: string, imagesUrl: string[], songUrl: string, lyrics: string } }) => {
+	// Check if we have an MP4 video - look for data:video/mp4 prefix
+	// Some data URLs might have base64 encoding explicitly mentioned
+	const isMP4Video = videoData.videoUrl.startsWith('data:video/mp4') || 
+	                  videoData.videoUrl.startsWith('data:video/mp4;base64');
+	
+	// If videoUrl is the same as songUrl, we're in fallback mode (video generation failed)
+	const isVideoSameAsSong = videoData.videoUrl === videoData.songUrl;
+	
+	// Log for debugging
+	console.log("VideoPlayer component:");
+	console.log("- videoUrl starts with:", videoData.videoUrl.substring(0, 50));
+	console.log("- isMP4Video:", isMP4Video);
+	console.log("- isVideoSameAsSong:", isVideoSameAsSong);
+	console.log("- Number of images:", videoData.imagesUrl?.length || 0);
+	
+	return (
+		<div className="mt-2 p-3 bg-muted/50 rounded-md">
+			
+				<div className="mb-4">
+					<video 
+						controls
+						autoPlay={false}
+						preload="metadata"
+						className="w-full rounded-md" 
+						style={{ maxHeight: "400px" }}
+						playsInline
+					>
+						<source src={videoData.videoUrl} type="video/mp4" />
+						Your browser does not support the video tag.
+					</video>
+                    <div className="text-xs text-muted-foreground mt-1">
+                        If video doesn't play, try downloading it using the button below.
+                    </div>
+				</div>
+		
+		
+			
+			{isMP4Video && !isVideoSameAsSong && (
+				<a
+					href={videoData.videoUrl}
+					download={"Birthday video.mp4"}
+					className="inline-flex items-center px-3 py-1 bg-primary text-primary-foreground rounded-md text-sm ml-2"
+				>
+					Download Video
+				</a>
+			)}
 		</div>
 	);
 };

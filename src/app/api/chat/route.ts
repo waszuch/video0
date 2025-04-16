@@ -12,10 +12,12 @@ import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { getServerUser } from "@/components/AuthProvider/getServerUser";
 import { env } from "@/env";
-import type { GeneratedAssetsData } from "@/server/db/schema";
+import type { GeneratedAssetsData } from "@/server/schemas/generatedAssetsSchema";
 import { supabase } from "@/server/supabase/supabaseClient";
 import { getChatById, saveChat, saveMessages } from "./chatQueries";
 import { getMostRecentUserMessage, getTrailingMessageId } from "./utilts";
+import { setTimeout } from "timers/promises";
+import { createVideoFromImagesAndAudio } from "@/server/utils/videoGenerator";
 
 const replicate = new Replicate({
 	auth: env.REPLICATE_API_TOKEN || "",
@@ -42,7 +44,9 @@ Once you have all the details, generate the birthday song lyrics in the requeste
 
 After presenting the lyrics, you MUST call the 'generateMusicFromLyrics' tool with the generated lyrics to create the actual song audio.
 
-IMPORTANT: When the song is generated, do not display the direct URL to the user. Instead, return the song data in a structured format that will be rendered by the client application. The client will handle displaying the audio player and download options.`;
+After the song is generated, ask the user if they would like to create a music video for the song. If they say yes, ask them to provide physical details about the birthday person (such as age, gender, appearance, etc.). Then call the 'generateVideoFromMusic' tool with these details, the lyrics, and the song URL.
+
+IMPORTANT: When the song or video is generated, do not display the direct URL to the user or JSON.`;
 
 const openRouter = createOpenRouter({
 	apiKey: env.OPENROUTER_API_KEY,
@@ -409,6 +413,172 @@ export async function POST(request: Request) {
 			}
 		};
 
+		const generateVideoFromMusic = async ({
+			lyrics,
+			songUrl,
+			personDescription,
+		}: {
+			lyrics: string;
+			songUrl: string;
+			personDescription: string;
+		}) => {
+			try {
+				console.log("Generating video from music");
+				
+				// Split lyrics into verses (assuming blank lines separate verses)
+				const verses = lyrics.split(/\n\s*\n/).filter(verse => verse.trim().length > 0);
+				
+				// Determine verses to process (max 4)
+				const versesToProcess = verses.slice(0, Math.min(4, verses.length));
+				console.log(`Processing ${versesToProcess.length} verses for image generation.`);
+				
+				// 1. Generate all expert prompts in parallel
+				console.log("Generating expert prompts in parallel...");
+				const expertPromptPromises = versesToProcess.map((verse, index) => {
+					console.log(`Initiating prompt generation for verse ${index + 1}`);
+					return generateText({
+						model: openRouter(""),
+						system: `You are an expert image prompt engineer. Create a detailed, vivid image generation prompt based on the verse from a birthday song and description of the person.
+The prompt should:
+- Include visual details that capture the emotion and meaning of the verse
+- Incorporate the physical description of the birthday person
+- Add appropriate festive elements like cake, balloons, celebrations
+- Include technical specifications for high-quality image (lighting, style, composition)
+- Be optimized for AI image generation
+- Be between 100-200 words in length`,
+						prompt: `Verse: ${verse}\nPerson description: ${personDescription}`,
+					}).then(({ text: expertPrompt }) => {
+						console.log(`Generated expert prompt for verse ${index + 1}: ${expertPrompt.substring(0, 50)}...`);
+						return { index, expertPrompt }; // Keep track of original index if needed
+					}).catch(err => {
+						console.error(`Error generating expert prompt for verse ${index + 1}:`, err);
+						return { index, expertPrompt: null }; // Handle error case
+					});
+				});
+				
+				const expertPromptResults = await Promise.all(expertPromptPromises);
+				const validPrompts = expertPromptResults.filter(result => result.expertPrompt !== null);
+				console.log(`Successfully generated ${validPrompts.length} expert prompts.`);
+				
+				// 2. Generate all images in parallel using the generated prompts
+				console.log("Generating images in parallel...");
+				const imagePromises = validPrompts.map(async ({ index, expertPrompt }) => {
+					console.log(`Initiating image generation for verse ${index + 1} using prompt: ${expertPrompt.substring(0, 50)}...`);
+					
+					try {
+						const output = await replicate.run(
+							"recraft-ai/recraft-v3", 
+							{
+								input: {
+									size: "1365x1024",
+									prompt: expertPrompt
+								}
+							}
+						);
+						
+						console.log(`Received output for verse ${index + 1}. Output type: ${typeof output}, is array: ${Array.isArray(output)}`);
+						
+						if (!Array.isArray(output) && output && typeof output === 'object') {
+							const fileOutput = output as unknown as { url?: string | (() => Promise<string> | string) };
+							
+							if (typeof fileOutput.url === 'function') {
+								// Await the result if it's a function (likely returns a promise)
+								const imageUrlResult = await fileOutput.url(); // <-- Changed variable name
+								// Log the structure of the result to understand how to get the URL
+								console.log(`Inspecting imageUrlResult for verse ${index + 1}:`, JSON.stringify(imageUrlResult)); 
+
+								if (typeof imageUrlResult === 'string') { // <-- Check the new variable
+									console.log(`Got image URL (awaited function) for verse ${index + 1}: ${imageUrlResult.substring(0, 50)}...`);
+									return imageUrlResult;
+								} else {
+									console.warn(`Awaited function url() did not return a string for verse ${index + 1}. Type: ${typeof imageUrlResult}`);
+									// Attempt to find URL in common properties if it's an object
+									if (typeof imageUrlResult === 'object' && imageUrlResult !== null) {
+										const potentialUrl = (imageUrlResult as any).url || (imageUrlResult as any).href || (imageUrlResult as any).uri;
+										if (typeof potentialUrl === 'string') {
+											console.log(`Found potential URL in object for verse ${index + 1}: ${potentialUrl.substring(0, 50)}...`);
+											return potentialUrl;
+										}
+									}
+									return null;
+								}
+							} else if (typeof fileOutput.url === 'string') {
+								console.log(`Got image URL (string) for verse ${index + 1}: ${fileOutput.url.substring(0, 50)}...`);
+								return fileOutput.url;
+							} else {
+								console.log(`Unable to extract URL from output for verse ${index + 1}: ${JSON.stringify(fileOutput)}`);
+								return null; // Indicate failure
+							}
+						} else {
+							console.log(`Unexpected output format for verse ${index + 1}: ${JSON.stringify(output)}`);
+							return null; // Indicate failure
+						}
+					} catch (err) {
+						console.error(`Error generating image for verse ${index + 1}:`, err);
+						return null; // Indicate failure
+					}
+				});
+				
+				// Wait for all images to be generated and filter out failures
+				const imageUrlResults = await Promise.all(imagePromises);
+				const validImageUrls = imageUrlResults.filter(url => url !== null) as string[];
+				console.log(`Successfully generated ${validImageUrls.length} images:`, validImageUrls.map(url => url.substring(0,50)+"..."));
+
+				// Generate the video by combining images and audio
+				let videoUrl = songUrl; // Default to audio URL if no images or video fails
+				
+				if (validImageUrls.length > 0) {
+					try {
+						// Convert any URL objects to strings (although the above logic should ensure strings)
+						const stringImageUrls = validImageUrls.map(url => {
+							if (typeof url === 'string') return url;
+							// Basic check for URL-like object, might need refinement based on actual types
+							if (url && typeof url === 'object' && (url as any).href) return (url as any).href;
+							if (url && typeof url === 'object' && typeof (url as any).toString === 'function') return (url as any).toString();
+							console.warn("Encountered non-string URL object:", url);
+							return String(url); // Fallback attempt
+						}).filter(url => typeof url === 'string' && url.length > 0);
+
+						console.log(`Using ${stringImageUrls.length} image URLs for video creation.`);
+						
+						// Create the MP4 video using FFmpeg
+						console.log("Generating MP4 video from images and audio");
+						videoUrl = await createVideoFromImagesAndAudio(stringImageUrls, songUrl);
+						console.log("MP4 video generation completed, URL starts with:", videoUrl.substring(0, 30));
+						console.log("Video URL type:", typeof videoUrl);
+						console.log("Is video URL a data URL?", videoUrl.startsWith('data:video/mp4'));
+					} catch (error) {
+						console.error("Error creating MP4 video:", error);
+						// Fall back to using the audio URL if video creation fails
+						console.log("Falling back to audio URL due to video creation error.");
+						videoUrl = songUrl;
+					}
+				} else {
+					console.log("No valid images generated, using audio URL as video URL.");
+				}
+				
+				const result = {
+					type: "birthdayVideo",
+					videoUrl: videoUrl,
+					imagesUrl: [], // Keep this empty as per original logic
+					songUrl: songUrl,
+					lyrics: lyrics,
+				} satisfies GeneratedAssetsData;
+				
+				console.log("Final video result structure:", {
+					type: result.type,
+					videoUrlPrefix: result.videoUrl.substring(0, 30) + "...",
+					hasImages: false,
+					hasSong: !!result.songUrl
+				});
+				
+				return result;
+			} catch (error) {
+				console.error("Error generating video:", error);
+				throw error;
+			}
+		};
+
 		return createDataStreamResponse({
 			execute: (dataStream) => {
 				const result = streamText({
@@ -430,6 +600,22 @@ export async function POST(request: Request) {
 								),
 							}),
 							execute: (params) => generateMusicFromLyrics(params),
+						},
+						generateVideoFromMusic: {
+							description:
+								"Generates a music video from lyrics, song URL, and description of the person.",
+							parameters: z.object({
+								lyrics: z
+									.string()
+									.describe("The full lyrics of the birthday song."),
+								songUrl: z
+									.string()
+									.describe("The URL of the generated song audio."),
+								personDescription: z
+									.string()
+									.describe("Physical description of the birthday person (age, gender, appearance, etc.)."),
+							}),
+							execute: (params) => generateVideoFromMusic(params),
 						},
 					},
 					onFinish: async ({ response }) => {
