@@ -1,0 +1,1 @@
+export const FREE_INITIAL_TOKEN_AMOUNT = 2;
