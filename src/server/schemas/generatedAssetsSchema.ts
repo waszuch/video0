@@ -4,6 +4,7 @@ const birthdaySongDataSchema = z.object({
 	type: z.literal("birthdaySong"),
 	songUrl: z.string(),
 	lyrics: z.string(),
+	id: z.string(),
 });
 
 const birthdayVideoDataSchema = z.object({
@@ -12,6 +13,7 @@ const birthdayVideoDataSchema = z.object({
 	imagesUrl: z.array(z.string()),
 	songUrl: z.string(),
 	lyrics: z.string(),
+	id: z.string(),
 });
 
 export const generatedAssetsDataSchema = z.discriminatedUnion("type", [

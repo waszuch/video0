@@ -1,4 +1,5 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { createId } from "@paralleldrive/cuid2";
 import {
 	appendResponseMessages,
 	createDataStreamResponse,
@@ -403,11 +404,13 @@ export async function POST(request: Request) {
 				if (!urlResult?.signedUrl) {
 					throw new Error("Failed to generate song");
 				}
-
+				const assetId = createId();
 				await saveGeneratedAssets({
 					asset: {
+						id: assetId,
 						type: "birthdaySong",
 						data: {
+							id: assetId,
 							type: "birthdaySong",
 							songUrl: urlResult?.signedUrl,
 							lyrics: lyrics,
@@ -424,6 +427,7 @@ export async function POST(request: Request) {
 					type: "birthdaySong",
 					songUrl: urlResult?.signedUrl,
 					lyrics: lyrics,
+					id: assetId,
 				} satisfies GeneratedAssetsDataSchema;
 			} catch (error) {
 				console.error("Error:", error);

@@ -5,6 +5,7 @@ import equal from "fast-deep-equal";
 import { AnimatePresence, motion } from "framer-motion";
 import { SparklesIcon } from "lucide-react";
 import { memo } from "react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { generatedAssetsDataSchema } from "@/server/schemas/generatedAssetsSchema";
 import { Markdown } from "./markdown";
@@ -81,7 +82,10 @@ const PurePreviewMessage = ({ message }: { message: UIMessage }) => {
 									if (parsedResult.type === "birthdaySong") {
 										return (
 											<div key={toolCallId}>
-												<SongPlayer songUrl={parsedResult.songUrl} />
+												<SongPlayer
+													songUrl={parsedResult.songUrl}
+													linkToSongPage={`/happy-birthday/${parsedResult.id}`}
+												/>
 											</div>
 										);
 									}
@@ -142,7 +146,13 @@ export const ThinkingMessage = () => {
 	);
 };
 
-const SongPlayer = ({ songUrl }: { songUrl: string }) => {
+const SongPlayer = ({
+	songUrl,
+	linkToSongPage,
+}: {
+	songUrl: string;
+	linkToSongPage: string;
+}) => {
 	return (
 		<div className="mt-2 p-3 bg-muted/50 rounded-md">
 			<div className="font-medium mb-2">Your birthday song is ready!</div>
@@ -158,6 +168,18 @@ const SongPlayer = ({ songUrl }: { songUrl: string }) => {
 			>
 				Download Song
 			</a>
+			<button
+				type="button"
+				onClick={() => {
+					toast.success("Link copied to clipboard");
+					navigator.clipboard.writeText(
+						window.location.origin + linkToSongPage,
+					);
+				}}
+				className="inline-flex items-center px-3 py-1 bg-primary text-primary-foreground rounded-md text-sm ml-2 cursor-pointer"
+			>
+				Copy birthday video link
+			</button>
 		</div>
 	);
 };
