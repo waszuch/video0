@@ -16,7 +16,7 @@ export default function PublicPage({
 
 	useEffect(() => {
 		if (user && isUserDataLoaded) {
-			router.push("/chat/random-id-we-need-to-update-it-later");
+			router.push("/chat");
 		}
 	}, [user, isUserDataLoaded, router]);
 
