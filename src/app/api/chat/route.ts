@@ -8,11 +8,14 @@ import {
 	streamText,
 	type UIMessage,
 } from "ai";
+import { eq, sql } from "drizzle-orm";
 import Replicate from "replicate";
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { getServerUser } from "@/components/AuthProvider/getServerUser";
 import { env } from "@/env";
+import { db } from "@/server/db";
+import { generationTokens, generationTransactions } from "@/server/db/schema";
 import type { GeneratedAssetsDataSchema } from "@/server/schemas/generatedAssetsSchema";
 import { supabase } from "@/server/supabase/supabaseClient";
 import {
@@ -329,6 +332,21 @@ export async function POST(request: Request) {
 			return new Response("Unauthorized", { status: 401 });
 		}
 
+		const availableTokens = await db.query.generationTokens.findFirst({
+			where: eq(generationTokens.profileId, user.id),
+			columns: {
+				availableTokens: true,
+			},
+		});
+
+		if (!availableTokens) {
+			return new Response("No available tokens found", { status: 400 });
+		}
+
+		if (availableTokens.availableTokens <= 0) {
+			return new Response("No available tokens left", { status: 400 });
+		}
+
 		const userMessage = getMostRecentUserMessage(messages);
 
 		if (!userMessage) {
@@ -388,7 +406,9 @@ export async function POST(request: Request) {
 				const output = await replicate.run("minimax/music-01", {
 					input,
 				});
-				const fileName = `${user.id}-${Date.now()}-${selectedVoice}-${selectedInstrumental}.mp3`;
+				const fileName = `${
+					user.id
+				}-${Date.now()}-${selectedVoice}-${selectedInstrumental}.mp3`;
 				console.log("trying to upload song");
 				// @ts-expect-error
 				const blob = await output.blob(); // get the real binary blob, per replicate docs
@@ -430,7 +450,6 @@ export async function POST(request: Request) {
 					id: assetId,
 				} satisfies GeneratedAssetsDataSchema;
 			} catch (error) {
-				console.error("Error:", error);
 				return "Sorry, I encountered an error.";
 			}
 		};
@@ -455,7 +474,31 @@ export async function POST(request: Request) {
 									"The style of the song (Blues, Country, Electronic, Funk, Hip-Hop, Jazz, Metal, R&B, Reggae). Default is Electronic.",
 								),
 							}),
-							execute: (params) => generateMusicFromLyrics(params),
+							execute: async (params) =>
+								await db.transaction(async (tx) => {
+									const generationToken =
+										await tx.query.generationTokens.findFirst({
+											where: eq(generationTokens.profileId, user.id),
+										});
+
+									if (!generationToken) {
+										throw new Error("No generation token found!");
+									}
+									await tx
+										.update(generationTokens)
+										.set({
+											availableTokens: sql`${generationTokens.availableTokens} - 1`,
+										})
+										.where(eq(generationTokens.profileId, user.id));
+
+									await tx.insert(generationTransactions).values({
+										amount: 1,
+										generationTokenId: generationToken.id,
+										id: uuidv4(),
+									});
+
+									return generateMusicFromLyrics(params);
+								}),
 						},
 					},
 					onFinish: async ({ response }) => {
@@ -501,7 +544,7 @@ export async function POST(request: Request) {
 				result.mergeIntoDataStream(dataStream);
 			},
 
-			onError: () => {
+			onError: (e) => {
 				return "Oops, an error occurred!";
 			},
 		});
