@@ -19,4 +19,6 @@ export const generatedAssetsDataSchema = z.discriminatedUnion("type", [
 	birthdayVideoDataSchema,
 ]);
 
-export type GeneratedAssetsData = z.infer<typeof generatedAssetsDataSchema>;
+export type GeneratedAssetsDataSchema = z.infer<
+	typeof generatedAssetsDataSchema
+>;

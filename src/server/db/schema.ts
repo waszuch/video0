@@ -1,6 +1,4 @@
-// Example model schema from the Drizzle docs
-// https://orm.drizzle.team/docs/sql-schema-declaration
-
+import { createId } from "@paralleldrive/cuid2";
 import { sql } from "drizzle-orm";
 import { relations } from "drizzle-orm";
 import {
@@ -12,13 +10,8 @@ import {
 	varchar,
 } from "drizzle-orm/pg-core";
 import { json } from "drizzle-orm/pg-core";
-import type { GeneratedAssetsData } from "../schemas/generatedAssetsSchema";
-/**
- * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
- * database instance for multiple projects.
- *
- * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
- */
+import type { GeneratedAssetsDataSchema } from "../schemas/generatedAssetsSchema";
+
 export const createTable = pgTableCreator((name) => `${name}`);
 
 export const profiles = pgTable("profiles", {
@@ -56,15 +49,18 @@ export const messages = pgTable("messages", {
 
 export type DBMessage = typeof messages.$inferSelect;
 
-export const generated_assets = pgTable("generated_assets", {
-	id: uuid("id").primaryKey().notNull().defaultRandom(),
+export const generatedAssets = pgTable("generated_assets", {
+	id: text("id")
+		.primaryKey()
+		.notNull()
+		.$defaultFn(() => createId()),
 	type: varchar("type", { enum: ["birthdaySong", "birthdayVideo"] }).notNull(),
 	createdAt: timestamp("created_at").notNull(),
 	updatedAt: timestamp("updated_at").notNull(),
 	profileId: uuid("proflie_id")
 		.notNull()
 		.references(() => profiles.id),
-	data: json("data").$type<GeneratedAssetsData>().notNull(),
+	data: json("data").$type<GeneratedAssetsDataSchema>().notNull(),
 	chatId: uuid("chat_id").references(() => chats.id),
 	title: text("title").notNull(),
 });
@@ -72,7 +68,7 @@ export const generated_assets = pgTable("generated_assets", {
 // Drizzle ORM relations
 export const profilesRelations = relations(profiles, ({ many }) => ({
 	chats: many(chats, { relationName: "ProfileChats" }),
-	generatedAssets: many(generated_assets, {
+	generatedAssets: many(generatedAssets, {
 		relationName: "ProfileGeneratedAssets",
 	}),
 }));
@@ -84,7 +80,7 @@ export const chatRelations = relations(chats, ({ one, many }) => ({
 		relationName: "ProfileChats",
 	}),
 	messages: many(messages, { relationName: "ChatMessages" }),
-	generatedAssets: many(generated_assets, {
+	generatedAssets: many(generatedAssets, {
 		relationName: "ChatGeneratedAssets",
 	}),
 }));
@@ -98,15 +94,15 @@ export const messageRelations = relations(messages, ({ one }) => ({
 }));
 
 export const generatedAssetsRelations = relations(
-	generated_assets,
+	generatedAssets,
 	({ one }) => ({
 		profile: one(profiles, {
-			fields: [generated_assets.profileId],
+			fields: [generatedAssets.profileId],
 			references: [profiles.id],
 			relationName: "ProfileGeneratedAssets",
 		}),
 		chat: one(chats, {
-			fields: [generated_assets.chatId],
+			fields: [generatedAssets.chatId],
 			references: [chats.id],
 			relationName: "ChatGeneratedAssets",
 		}),

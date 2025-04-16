@@ -12,9 +12,14 @@ import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { getServerUser } from "@/components/AuthProvider/getServerUser";
 import { env } from "@/env";
-import type { GeneratedAssetsData } from "@/server/db/schema";
+import type { GeneratedAssetsDataSchema } from "@/server/schemas/generatedAssetsSchema";
 import { supabase } from "@/server/supabase/supabaseClient";
-import { getChatById, saveChat, saveMessages } from "./chatQueries";
+import {
+	getChatById,
+	saveChat,
+	saveGeneratedAssets,
+	saveMessages,
+} from "./chatQueries";
 import { getMostRecentUserMessage, getTrailingMessageId } from "./utilts";
 
 const replicate = new Replicate({
@@ -385,7 +390,7 @@ export async function POST(request: Request) {
 				const fileName = `${user.id}-${Date.now()}-${selectedVoice}-${selectedInstrumental}.mp3`;
 				console.log("trying to upload song");
 				// @ts-expect-error
-				const blob = await output.blob(); // get the real binary blob
+				const blob = await output.blob(); // get the real binary blob, per replicate docs
 				const buffer = await blob.arrayBuffer();
 				const uint8Array = new Uint8Array(buffer);
 				const { error } = await supabase()
@@ -398,11 +403,28 @@ export async function POST(request: Request) {
 				if (!urlResult?.signedUrl) {
 					throw new Error("Failed to generate song");
 				}
+
+				await saveGeneratedAssets({
+					asset: {
+						type: "birthdaySong",
+						data: {
+							type: "birthdaySong",
+							songUrl: urlResult?.signedUrl,
+							lyrics: lyrics,
+						},
+						profileId: user.id,
+						chatId: id,
+						createdAt: new Date(),
+						updatedAt: new Date(),
+						title: chat?.title ?? "",
+					},
+				});
+
 				return {
 					type: "birthdaySong",
 					songUrl: urlResult?.signedUrl,
 					lyrics: lyrics,
-				} satisfies GeneratedAssetsData;
+				} satisfies GeneratedAssetsDataSchema;
 			} catch (error) {
 				console.error("Error:", error);
 				return "Sorry, I encountered an error.";
