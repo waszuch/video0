@@ -7,7 +7,7 @@ import { SuspendedPostHogPageView } from "./PostHogPageView";
 
 if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
 	posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY, {
-		api_host: "https://www.aplikomat.pl/ingest-internal-service",
+		api_host: "https://www.video0.dev/ingest-internal-service",
 		ui_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
 		capture_pageview: false,
 		capture_pageleave: true,
