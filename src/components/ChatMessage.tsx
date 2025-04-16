@@ -158,7 +158,7 @@ const SongPlayer = ({
 			<div className="font-medium mb-2">Your birthday song is ready!</div>
 			<audio controls className="w-full mb-2">
 				<source src={songUrl} type="audio/mpeg" />
-				<track kind="captions" src="" label="English captions" />
+				<track kind="captions" label="English captions" />
 				Your browser does not support the audio element.
 			</audio>
 			<a

@@ -1,4 +1,7 @@
+"use client";
+import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
 import { ChevronsUpDown, LogOut, Sparkles } from "lucide-react";
+import { useEffect } from "react";
 import { useUser } from "@/components/AuthProvider/AuthProvider";
 import {
 	DropdownMenu,
@@ -11,13 +14,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/server/supabase/supabaseClient";
+import { api } from "@/trpc/react";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
 
 export const UserDropdown = () => {
 	const { user } = useUser();
 	const isMobile = useIsMobile();
-
+	useEffect(() => {
+		PolarEmbedCheckout.init();
+	}, []);
+	const { mutateAsync: checkout, isPending: isCheckoutPending } =
+		api.tokens.checkout.useMutation();
 	if (!user) return null;
 
 	const avatar = user.user_metadata.avatar_url ?? "";
@@ -73,7 +81,13 @@ export const UserDropdown = () => {
 				</DropdownMenuLabel>
 				<DropdownMenuSeparator />
 				<DropdownMenuGroup>
-					<DropdownMenuItem>
+					<DropdownMenuItem
+						onMouseDown={() =>
+							checkout({}).then((checkout) => {
+								PolarEmbedCheckout.create(checkout.url, "dark");
+							})
+						}
+					>
 						<Sparkles className="mr-2 size-4" />
 						Buy more credits
 					</DropdownMenuItem>

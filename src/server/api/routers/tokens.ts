@@ -1,15 +1,11 @@
 import { TRPCError } from "@trpc/server";
-import { eq, sql } from "drizzle-orm";
-import { Z } from "node_modules/@upstash/redis/zmscore-CjoCv9kz.mjs";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { env } from "@/env";
 import { FREE_INITIAL_TOKEN_AMOUNT, POLAR_PRODUCT_IDS } from "@/lib/contants";
 import { createTRPCRouter, privateProcedure } from "@/server/api/trpc";
 import { db } from "@/server/db";
-import {
-	type DBGenerationToken,
-	generationTokens,
-	generationTransactions,
-} from "@/server/db/schema";
+import { type DBGenerationToken, generationTokens } from "@/server/db/schema";
 import { polar } from "@/utils/polar";
 
 export const tokensRouter = createTRPCRouter({
@@ -50,7 +46,7 @@ export const tokensRouter = createTRPCRouter({
 	checkout: privateProcedure
 		.input(
 			z.object({
-				chatId: z.string(),
+				chatId: z.string().optional(),
 			}),
 		)
 		.mutation(async ({ ctx, input }) => {
@@ -62,12 +58,16 @@ export const tokensRouter = createTRPCRouter({
 				const checkoutUrl = await polar.checkouts.create({
 					customerId: customer.id,
 					customerExternalId: ctx.user.id,
-					successUrl: `https://video0.dev/chat/${input.chatId}`,
+					successUrl: `https://video0.dev/chat/${input.chatId ?? ""}`,
 					products: [
 						POLAR_PRODUCT_IDS["3_TOKENS"].id,
 						POLAR_PRODUCT_IDS["5_TOKENS"].id,
 						POLAR_PRODUCT_IDS["10_TOKENS"].id,
 					],
+					embedOrigin:
+						env.NODE_ENV === "production"
+							? "https://video0.dev"
+							: "http://localhost:3000",
 				});
 
 				return checkoutUrl;
@@ -80,12 +80,16 @@ export const tokensRouter = createTRPCRouter({
 				const checkoutUrl = await polar.checkouts.create({
 					customerId: customer.id,
 					customerExternalId: ctx.user.id,
-					successUrl: `https://video0.dev/chat/${input.chatId}`,
+					successUrl: `https://video0.dev/chat/${input.chatId ?? ""}`,
 					products: [
 						POLAR_PRODUCT_IDS["3_TOKENS"].id,
 						POLAR_PRODUCT_IDS["5_TOKENS"].id,
 						POLAR_PRODUCT_IDS["10_TOKENS"].id,
 					],
+					embedOrigin:
+						env.NODE_ENV === "production"
+							? "https://video0.dev"
+							: "http://localhost:3000",
 				});
 
 				return checkoutUrl;

@@ -43,7 +43,7 @@ export function Chat({
 				trpcUtils.chats.getChats.invalidate();
 				trpcUtils.tokens.get.invalidate();
 			},
-			onError: (error) => {
+			onError: () => {
 				toast.error("An error occurred, please try again!");
 			},
 		});
@@ -70,7 +70,7 @@ export function Chat({
 					exit={{ opacity: 0, y: 10 }}
 					transition={{ duration: 0.3 }}
 				>
-					Tokens left{" "}
+					Tokens left
 					<span className="font-bold bg-black text-white rounded-full flex items-center w-10 h-10 justify-center aspect-square shrink-0 border-border border">
 						{availableTokens}
 					</span>
