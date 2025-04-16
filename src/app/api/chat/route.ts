@@ -494,7 +494,7 @@ export async function POST(request: Request) {
 										await tx.insert(generationTransactions).values({
 											amount: 1,
 											generationTokenId: generationToken.id,
-											id: createId(),
+											id: crypto.randomUUID(),
 										})
 
                   return generateMusicFromLyrics(params);
@@ -544,7 +544,8 @@ export async function POST(request: Request) {
         result.mergeIntoDataStream(dataStream);
       },
 
-      onError: () => {
+      onError: (e) => {
+				console.log("Error:", e);
         return "Oops, an error occurred!";
       },
     });
