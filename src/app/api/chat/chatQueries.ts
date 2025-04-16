@@ -1,6 +1,11 @@
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/server/db";
-import { chats, type DBMessage, messages } from "@/server/db/schema";
+import {
+	chats,
+	type DBMessage,
+	generatedAssets,
+	messages,
+} from "@/server/db/schema";
 
 export async function saveChat({
 	id,
@@ -64,6 +69,19 @@ export async function saveMessages({
 		return await db.insert(messages).values(messagesToInsert);
 	} catch (error) {
 		console.error("Failed to save messages in database", error);
+		throw error;
+	}
+}
+
+export async function saveGeneratedAssets({
+	asset,
+}: {
+	asset: typeof generatedAssets.$inferInsert;
+}) {
+	try {
+		return await db.insert(generatedAssets).values(asset);
+	} catch (error) {
+		console.error("Failed to save generated assets in database", error);
 		throw error;
 	}
 }

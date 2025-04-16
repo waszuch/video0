@@ -2,7 +2,6 @@
 
 import { FcGoogle } from "react-icons/fc";
 import { supabase } from "@/server/supabase/supabaseClient";
-import { Button } from "./ui/button";
 
 export const GoogleLoginButton = () => {
 	return (
@@ -13,7 +12,7 @@ export const GoogleLoginButton = () => {
 				supabase().auth.signInWithOAuth({
 					provider: "google",
 					options: {
-						redirectTo: `${window.location.origin}/chat/random-id-we-need-to-update-it-later`,
+						redirectTo: `${window.location.origin}/chat`,
 					},
 				});
 			}}

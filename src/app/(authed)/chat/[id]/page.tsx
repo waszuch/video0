@@ -1,10 +1,10 @@
 import type { UIMessage } from "ai";
 import type { Attachment } from "ai";
 import { notFound } from "next/navigation";
+import PrivatePage from "@/components/AuthProvider/PrivatePage";
 import { Chat } from "@/components/Chat";
 import type { DBMessage } from "@/server/db/schema";
 import { createApi } from "@/trpc/server";
-
 export default async function Page(props: { params: Promise<{ id: string }> }) {
 	const params = await props.params;
 	const { id } = params;
@@ -20,10 +20,14 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
 	}
 
 	return (
+    <PrivatePage>
 		<div className="w-full min-h-screen bg-black">
 			<div className="absolute inset-0 bg-gradient-to-b from-purple-600/10 to-pink-600/10 pointer-events-none" />
 			<Chat id={id} initialMessages={convertToUIMessages(foundChat.messages)} />
 		</div>
+    </PrivatePage>
+
+
 	);
 }
 

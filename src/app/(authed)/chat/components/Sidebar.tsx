@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { UserDropdown } from "@/components/UserDropdown";
 import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
 import AnimatedLogo from "@/components/AnimatedLogo";
@@ -76,6 +77,8 @@ export default function Sidebar() {
 					))}
 				</ul>
 			</div>
+			</nav>
+			<UserDropdown />
 		</aside>
 	);
 }

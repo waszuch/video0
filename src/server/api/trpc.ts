@@ -11,6 +11,7 @@ import type { ReadonlyRequestCookies } from "next/dist/server/web/spec-extension
 import superjson from "superjson";
 import { ZodError } from "zod";
 import { db } from "@//server/db";
+import { ratelimit } from "../rateLimit";
 import { getServiceSupabase } from "../supabase/supabaseClient";
 
 /**
@@ -100,6 +101,14 @@ const enforceUserIsAuthed = t.middleware(async ({ ctx, next }) => {
 	if (!ctx.user) {
 		throw new TRPCError({
 			code: "UNAUTHORIZED",
+		});
+	}
+
+	const { success } = await ratelimit.limit(ctx.user.id);
+
+	if (!success) {
+		throw new TRPCError({
+			code: "TOO_MANY_REQUESTS",
 		});
 	}
 
