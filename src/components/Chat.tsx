@@ -44,7 +44,6 @@ export function Chat({
 				trpcUtils.tokens.get.invalidate();
 			},
 			onError: (error) => {
-				console.error("Error:", error);
 				toast.error("An error occurred, please try again!");
 			},
 		});

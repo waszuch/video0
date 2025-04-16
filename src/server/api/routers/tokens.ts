@@ -45,7 +45,7 @@ export const tokensRouter = createTRPCRouter({
 			throw new TRPCError({ code: "NOT_FOUND" });
 		}
 
-		return tokens.availableTokens;
+		return tokens.availableTokens ?? 0;
 	}),
 	checkout: privateProcedure
 		.input(
