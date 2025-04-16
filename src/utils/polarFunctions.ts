@@ -1,5 +1,6 @@
 import type { WebhookOrderPaidPayload } from "@polar-sh/sdk/models/components/webhookorderpaidpayload.js";
 import { eq, sql } from "drizzle-orm";
+import { v4 as uuidv4 } from "uuid";
 import {
 	FREE_INITIAL_TOKEN_AMOUNT,
 	POLAR_TOKEN_AMOUNTS_BY_IDS,
@@ -10,7 +11,6 @@ import {
 	generationTokens,
 	generationTokenTopups,
 } from "@/server/db/schema";
-
 export const handlePolarOrderPaid = async (
 	payload: WebhookOrderPaidPayload,
 ) => {
@@ -42,7 +42,7 @@ export const handlePolarOrderPaid = async (
 				await tx
 					.insert(generationTokens)
 					.values({
-						id: crypto.randomUUID(),
+						id: uuidv4(),
 						profileId: externalId,
 						createdAt: createdAt.toISOString(),
 						availableTokens: FREE_INITIAL_TOKEN_AMOUNT,
@@ -58,7 +58,7 @@ export const handlePolarOrderPaid = async (
 
 		// Create a generation token topup
 		await tx.insert(generationTokenTopups).values({
-			id: crypto.randomUUID(),
+			id: uuidv4(),
 			generationTokenId: generationToken.id,
 			amount: tokensToAdd,
 			createdAt: createdAt.toISOString(),

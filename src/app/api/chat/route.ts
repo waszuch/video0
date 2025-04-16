@@ -494,7 +494,7 @@ export async function POST(request: Request) {
 									await tx.insert(generationTransactions).values({
 										amount: 1,
 										generationTokenId: generationToken.id,
-										id: crypto.randomUUID(),
+										id: uuidv4(),
 									});
 
 									return generateMusicFromLyrics(params);
