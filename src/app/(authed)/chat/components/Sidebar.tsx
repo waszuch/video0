@@ -13,21 +13,14 @@ const navItems = [
 	{ name: "Profile", href: "/profile" },
 ];
 
+const formatChatTitle = (title: string | null) => {
+	if (!title) return "Untitled Chat";
+	return title.length > 25 ? title.substring(0, 22) + "..." : title;
+};
+
 export default function Sidebar() {
 	const { data: chats = [] } = api.chats.getChats.useQuery();
 	const pathname = usePathname();
-
-	// Format the chat title to be more readable
-	const formatChatTitle = (title: string | null) => {
-		if (!title) return "Untitled Chat";
-		
-		// Limit title length
-		if (title.length > 25) {
-			return title.substring(0, 22) + "...";
-		}
-		
-		return title;
-	};
 
 	return (
 		<aside className="w-[260px] md:w-[280px] bg-black/95 backdrop-blur-sm border-r border-purple-700/30 h-screen p-4 font-archivo text-white flex flex-col shadow-xl md:shadow-none">

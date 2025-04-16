@@ -51,9 +51,8 @@ const Greeting = () => {
 	const firstLine = "Let's create a unique birthday video song!";
 	const secondLine = "Just tell me the name of the person celebrating.";
 	
-	// Calculate when second line should start (after first line completes)
 	const firstLineCompletionTime = 0.5 + firstLine.length * 0.03;
-	const pauseBetweenLines = 0.8; // Pause between first and second line
+	const pauseBetweenLines = 0.8; 
 	const secondLineStartTime = firstLineCompletionTime + pauseBetweenLines;
 
 	return (
@@ -70,7 +69,7 @@ const Greeting = () => {
 						transition={{
 							duration: 0.2,
 							delay: 0.5 + index * 0.03,
-							ease: [0.34, 1.56, 0.64, 1], // Custom spring-like easing
+							ease: [0.34, 1.56, 0.64, 1],
 						}}
 						style={{ display: 'inline-block', lineHeight: 1.5 }}
 						className=""
@@ -88,7 +87,7 @@ const Greeting = () => {
 						transition={{
 							duration: 0.2,
 							delay: secondLineStartTime + index * 0.03,
-							ease: [0.34, 1.56, 0.64, 1], // Custom spring-like easing
+							ease: [0.34, 1.56, 0.64, 1],
 						}}
 						style={{ display: 'inline-block', lineHeight: 1.5 }}
 					>
