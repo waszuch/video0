@@ -20,7 +20,10 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
 	}
 
 	return (
-		<Chat id={id} initialMessages={convertToUIMessages(foundChat.messages)} />
+		<div className="w-full min-h-screen bg-black">
+			<div className="absolute inset-0 bg-gradient-to-b from-purple-600/10 to-pink-600/10 pointer-events-none" />
+			<Chat id={id} initialMessages={convertToUIMessages(foundChat.messages)} />
+		</div>
 	);
 }
 

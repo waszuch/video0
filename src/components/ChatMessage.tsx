@@ -8,31 +8,41 @@ import { memo } from "react";
 import { cn } from "@/lib/utils";
 import { generatedAssetsDataSchema } from "@/server/schemas/generatedAssetsSchema";
 import { Markdown } from "./markdown";
+import Image from "next/image";
+import { useState, useRef, useEffect } from "react";
 
 const PurePreviewMessage = ({ message }: { message: UIMessage }) => {
 	return (
 		<AnimatePresence>
 			<motion.div
 				data-testid={`message-${message.role}`}
-				className="w-full mx-auto max-w-3xl px-4 group/message"
+				className="w-full mx-auto max-w-2xl px-2 md:px-4 group/message overflow-hidden"
 				initial={{ y: 5, opacity: 0 }}
 				animate={{ y: 0, opacity: 1 }}
 				data-role={message.role}
 			>
 				<div
 					className={cn(
-						"flex gap-4 w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl",
+						"flex gap-3 md:gap-4 w-full",
+						message.role === "user" ? "justify-end" : ""
 					)}
 				>
 					{message.role === "assistant" && (
-						<div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border bg-background">
-							<div className="translate-y-px">
-								<SparklesIcon size={14} />
-							</div>
+						<div className="size-8 flex items-center rounded-full justify-center shrink-0 bg-transparent">
+							<Image 
+								src="/icon.svg" 
+								alt="AI Assistant" 
+								width={28} 
+								height={28} 
+								className="w-7 h-7"
+							/>
 						</div>
 					)}
 
-					<div className="flex flex-col gap-4 w-full">
+					<div className={cn(
+						"flex flex-col gap-3 md:gap-4 overflow-hidden",
+						message.role === "assistant" ? "w-[85%] md:w-[85%]" : "w-[85%] md:w-[75%]"
+					)}>
 						{message.parts?.map((part, index) => {
 							const { type } = part;
 							const key = `message-${message.id}-part-${index}`;
@@ -49,10 +59,13 @@ const PurePreviewMessage = ({ message }: { message: UIMessage }) => {
 								}
 								
 								return (
-									<div key={key} className="flex flex-row gap-2 items-start">
+									<div key={key} className={cn(
+										"flex flex-row gap-2 items-start",
+										message.role === "user" ? "justify-end" : ""
+									)}>
 										<div
 											data-testid="message-content"
-											className={cn("flex flex-col gap-4", {
+											className={cn("flex flex-col gap-3 md:gap-4 overflow-hidden text-sm md:text-base", {
 												"bg-primary text-primary-foreground px-3 py-2 rounded-xl":
 													message.role === "user",
 											})}
@@ -131,25 +144,31 @@ export const ThinkingMessage = () => {
 
 	return (
 		<motion.div
-			className="w-full mx-auto max-w-3xl px-4 group/message "
+			className="w-full mx-auto max-w-2xl px-2 md:px-4 group/message"
 			initial={{ y: 5, opacity: 0 }}
 			animate={{ y: 0, opacity: 1, transition: { delay: 1 } }}
 			data-role={role}
 		>
 			<div
 				className={cn(
-					"flex gap-4 group-data-[role=user]/message:px-3 w-full group-data-[role=user]/message:w-fit group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl group-data-[role=user]/message:py-2 rounded-xl",
+					"flex gap-3 md:gap-4 group-data-[role=user]/message:px-3 w-full group-data-[role=user]/message:w-fit group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl group-data-[role=user]/message:py-2 rounded-xl",
 					{
 						"group-data-[role=user]/message:bg-muted": true,
 					},
 				)}
 			>
-				<div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border">
-					<SparklesIcon size={14} />
+				<div className="size-7 md:size-8 flex items-center rounded-full justify-center shrink-0 bg-transparent">
+					<Image 
+						src="/icon.svg" 
+						alt="AI Assistant" 
+						width={28} 
+						height={28} 
+						className="w-7 h-7"
+					/>
 				</div>
 
-				<div className="flex flex-col gap-2 w-full">
-					<div className="flex flex-col gap-4 text-muted-foreground">
+				<div className="flex flex-col gap-2 w-[85%]">
+					<div className="flex flex-col gap-3 md:gap-4 text-muted-foreground text-sm md:text-base">
 						Hmm...
 					</div>
 				</div>
@@ -220,17 +239,62 @@ const VideoPlayer = ({ videoData }: { videoData: { videoUrl: string, imagesUrl: 
 	console.log("- isVideoSameAsSong:", isVideoSameAsSong);
 	console.log("- Number of images:", videoData.imagesUrl?.length || 0);
 	
-	return (
-		<div className="mt-2 p-3 bg-muted/50 rounded-md">
+	// Add state to track errors and handle retries
+	const [hasError, setHasError] = useState(false);
+	const [isRetrying, setIsRetrying] = useState(false);
+	const videoRef = useRef<HTMLVideoElement>(null);
+	
+	// Handle video error
+	const handleVideoError = () => {
+		console.log("Video playback error occurred");
+		if (!hasError) {
+			setHasError(true);
+		}
+	};
+	
+	// Auto-retry playback
+	const retryPlayback = () => {
+		if (videoRef.current && hasError && !isRetrying) {
+			setIsRetrying(true);
+			console.log("Retrying video playback");
 			
-				<div className="mb-4">
+			// Reset source to trigger reload
+			const currentSrc = videoRef.current.src;
+			videoRef.current.src = "";
+			
+			// Small delay before reloading source
+			setTimeout(() => {
+				if (videoRef.current) {
+					videoRef.current.src = currentSrc;
+					videoRef.current.load();
+					videoRef.current.play().catch(e => console.log("Retry play failed:", e));
+					setIsRetrying(false);
+					setHasError(false);
+				}
+			}, 100);
+		}
+	};
+	
+	// Auto-retry when error occurs
+	useEffect(() => {
+		if (hasError) {
+			retryPlayback();
+		}
+	}, [hasError]);
+	
+	return (
+		<div className="mt-2 p-2 md:p-3 bg-muted/50 rounded-md overflow-hidden w-full">
+			
+				<div className="mb-2 md:mb-4 overflow-hidden">
 					<video 
+						ref={videoRef}
 						controls
 						autoPlay={false}
 						preload="metadata"
-						className="w-full rounded-md" 
-						style={{ maxHeight: "400px" }}
+						className="w-full rounded-md max-w-full" 
+						style={{ maxHeight: "300px", objectFit: "contain" }}
 						playsInline
+						onError={handleVideoError}
 					>
 						<source src={videoData.videoUrl} type="video/mp4" />
 						Your browser does not support the video tag.
@@ -240,13 +304,13 @@ const VideoPlayer = ({ videoData }: { videoData: { videoUrl: string, imagesUrl: 
                     </div>
 				</div>
 		
-		
 			
+		
 			{isMP4Video && !isVideoSameAsSong && (
 				<a
 					href={videoData.videoUrl}
 					download={"Birthday video.mp4"}
-					className="inline-flex items-center px-3 py-1 bg-primary text-primary-foreground rounded-md text-sm ml-2"
+					className="inline-flex items-center px-3 py-2 md:py-1 bg-primary text-primary-foreground rounded-md text-sm ml-2"
 				>
 					Download Video
 				</a>
