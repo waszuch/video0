@@ -1,5 +1,4 @@
 import { TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "@/env";
 import { createTRPCRouter, privateProcedure } from "@/server/api/trpc";
@@ -33,7 +32,7 @@ export const imageGenRouter = createTRPCRouter({
 						// Create individual generation for each image
 						const generation = await client.generations.image.create({
 							prompt:
-								"Cartoon character, small and cute but make sure they look beautiful.",
+								"Cartoon character, attractive and charming. Celebrating their birthday with a festive appearance. Attractive",
 							aspect_ratio: "9:16",
 							character_ref: {
 								identity0: { images: [imageUrl] },
@@ -89,13 +88,11 @@ export const imageGenRouter = createTRPCRouter({
 							}
 
 							if (currentGeneration.state === "failed") {
-								console.log({ currentGeneration });
 								throw new Error(
 									`Generation failed: ${currentGeneration.failure_reason || "Unknown reason"}`,
 								);
 							}
 
-							console.log(`Processing image: ${imageUrl}...`);
 							// Wait before checking again
 							await new Promise((r) => setTimeout(r, 3000));
 						}

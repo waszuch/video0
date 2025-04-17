@@ -89,12 +89,12 @@ export async function saveMessages({
 }
 
 export async function saveGeneratedAssets({
-	asset,
+	assets,
 }: {
-	asset: typeof generatedAssets.$inferInsert;
+	assets: (typeof generatedAssets.$inferInsert)[];
 }) {
 	try {
-		return await db.insert(generatedAssets).values(asset);
+		return await db.insert(generatedAssets).values(assets);
 	} catch (error) {
 		console.error("Failed to save generated assets in database", error);
 		throw error;

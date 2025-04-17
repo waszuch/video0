@@ -186,10 +186,10 @@ export function GeneratedAssets({
 									ease: "easeOut",
 								}}
 							>
-								Congrats! Here&apos;s your video ❤️
+								🎉 Woohoo! Your Birthday Video is Ready! 🎂
 							</motion.h1>
 							<motion.span
-								className="text-gray-400"
+								className="text-gray-400 text-center max-w-xl"
 								initial={{ opacity: 0, y: 10 }}
 								animate={{ opacity: 1, y: 0 }}
 								transition={{
@@ -198,8 +198,9 @@ export function GeneratedAssets({
 									delay: 0.5,
 								}}
 							>
-								You can download it below and share it with your friends and
-								family.
+								Hi! We generated awesome videos for your friend and family with
+								different songs! Choose the one you like best and share it with
+								friends either by downloading or sending a link (recommended) ✨
 							</motion.span>
 						</div>
 
@@ -247,7 +248,7 @@ export function GeneratedAssets({
 																	window.location.origin,
 																);
 																navigator.clipboard.writeText(url.toString());
-																toast.success("Link copied to clipboard");
+																toast.success("Link copied to clipboard! 🔗");
 															}}
 														>
 															<CopyIcon className="w-4 h-4" />
@@ -272,7 +273,9 @@ export function GeneratedAssets({
 																			window.URL.revokeObjectURL(url);
 																			document.body.removeChild(a);
 																		} catch (error) {
-																			toast.error("Failed to download video");
+																			toast.error(
+																				"Failed to download video 😞",
+																			);
 																		}
 																	};
 																	downloadVideo();
@@ -288,6 +291,19 @@ export function GeneratedAssets({
 									</CardContent>
 								</Card>
 							))}
+						</motion.div>
+
+						<motion.div
+							className="text-center text-gray-300 text-lg mt-6 mb-10"
+							initial={{ opacity: 0, y: 10 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{
+								duration: 0.5,
+								ease: "easeOut",
+								delay: 1.5,
+							}}
+						>
+							<p>Have fun! 🎁 Make someone&apos;s day special! 💖</p>
 						</motion.div>
 					</div>
 				</ScrollArea>

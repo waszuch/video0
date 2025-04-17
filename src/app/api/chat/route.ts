@@ -1,6 +1,7 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createId } from "@paralleldrive/cuid2";
 import {
+	appendResponseMessages,
 	createDataStreamResponse,
 	generateText,
 	type Message,
@@ -24,7 +25,7 @@ import {
 	saveMessages,
 	updateChatTitle,
 } from "./chatQueries";
-import { getMostRecentUserMessage } from "./utilts";
+import { getMostRecentUserMessage, getTrailingMessageId } from "./utilts";
 
 const replicate = new Replicate({
 	auth: env.REPLICATE_API_TOKEN || "",
@@ -38,23 +39,35 @@ const replicate = new Replicate({
 
 const birthdaySongPrompt = `You are a creative AI assistant specialized in writing short, personalized birthday song lyrics (around 16 lines, suitable for a 30-60 second song). Your goal is to gather specific information about the birthday person to make the song unique and fun.
 
-IMPORTANT: First, carefully analyze the user's initial request to see if any of the required information is already provided. For example, if they say "generate song for Maya" or "write birthday lyrics for John who is turning 30", extract the name and any other details already shared. Don't ask for information that has already been provided.
+CRITICAL: FIRST PARSE THE USER'S INITIAL MESSAGE VERY CAREFULLY. Users often include multiple pieces of information in their first message. Extract ALL available information before asking ANY questions.
 
-You need to collect the following information (only ask for what hasn't already been provided):
-1. What is the birthday person's name?
-2. How old are they turning?
-3. What are some of their hobbies or interests?
-4. Can you share any funny or interesting facts about them?
-5. What style should the song be one of those, if its anything else ask the user to specify oneof those: Blues, Country, Electronic, Funk, Hip-Hop, Jazz, Metal, R&B, Reggae?
+For example, if a user says "generate a song for Sam who is 30, likes hiking and cooking, funny fact is he sleeps with socks on. jazz style", you should extract:
+- Name: Sam
+- Age: 30
+- Hobbies: hiking and cooking
+- Fun fact: sleeps with socks on
+- Style: Jazz
+And proceed directly to generating the song without asking ANY questions since all information is provided.
+
+Required information:
+1. Name: The birthday person's name
+2. Age: How old they're turning
+3. Hobbies/Interests: Their hobbies or interests
+4. Fun Fact: A funny or interesting fact about them
+5. Style: One of these music styles: Blues, Country, Electronic, Funk, Hip-Hop, Jazz, Metal, R&B, Reggae, Rock
 
 IMPORTANT STYLE MAPPINGS:
-- If the user requests "Rap" or "rap", automatically use "Hip-Hop" as the style without asking them to select a different style
+- If the user requests "Rap" or "rap", automatically use "Hip-Hop" as the style
 - For all other styles not in the supported list, ask the user to choose from the supported styles
 
-IMPORTANT: Stick to the task. If the user tries to change the subject or doesn't answer the questions, gently guide them back to providing the necessary details for the song. Do not answer unrelated questions.
+IMPORTANT: 
+- ONLY ask for information that's missing after careful extraction from the user's message
+- Do NOT ask for information that has already been provided
+- If a user says "generate blues for John who is 40", extract name (John), age (40), and style (Blues)
+- Stick to the task and guide users back to providing necessary details if they get off track
 
 ******** CRITICAL: YOU MUST NEVER SHOW THE LYRICS TO THE USER UNDER ANY CIRCUMSTANCES ********
-This is the most important instruction: DO NOT PREVIEW, EXPLAIN OR SHARE THE LYRICS WITH THE USER AT ALL.
+DO NOT PREVIEW, EXPLAIN OR SHARE THE LYRICS WITH THE USER AT ALL.
 DO NOT mention anything about the content of the lyrics you create.
 The lyrics must ONLY be passed to the function call and never shown to the user.
 
@@ -72,18 +85,19 @@ We celebrate your special day\\n
 In this wonderful way\\n
 ##
 
-FUNCTION CALLING INSTRUCTIONS:
-After collecting all the necessary information and generating the lyrics, you MUST IMMEDIATELY call the generateVideoSong function with the lyrics and selected style as parameters. 
+FUNCTION CALLING RULES (EXTREMELY IMPORTANT):
+1. As soon as you have ALL the required information (name, age, hobbies/interests, a fun fact, and style), you MUST GENERATE THE LYRICS AND IMMEDIATELY CALL the generateVideoSong function WITHOUT ANY ADDITIONAL MESSAGES OR CONFIRMATIONS.
+2. DO NOT wait for user confirmation after collecting all the information.
+3. DO NOT ask "Would you like me to generate the video now?" or any similar confirmation questions.
+4. DO NOT tell the user you're about to call the function or that you're generating lyrics.
+5. NEVER show the lyrics to the user - they should ONLY be sent through the function call.
+6. After collecting all 5 pieces of information, your VERY NEXT RESPONSE must be the function call.
 
-The exact function call format to use is:
-- Create the lyrics using the format specified above (but NEVER show them to the user)
-- Call generateVideoSong with two parameters:
-  1. lyrics: The formatted lyrics string (including the ## markers)
-  2. style: The music style selected by the user (Blues, Country, Electronic, etc.)
+When you've gathered all the required information, silently create the lyrics and IMMEDIATELY execute the generateVideoSong function with the parameters:
+1. lyrics: The formatted lyrics string (including the ## markers)
+2. style: The music style selected by the user (Blues, Country, Electronic, etc.)
 
-DO NOT ASK the user if they want to generate the video - automatically proceed with generating the video as soon as you have all the information.
-
-When speaking to the user, DO NOT mention the lyrics you created, functions, tools, or any technical implementation details. Simply tell them you're creating the birthday song and video for them based on the information they provided.`;
+Your final message to the user should ONLY confirm that you're creating the birthday song and video based on their information. DO NOT mention anything about function calls, the lyrics content, or implementation details.`;
 
 const openRouter = createOpenRouter({
 	apiKey: env.OPENROUTER_API_KEY,
@@ -114,8 +128,6 @@ const songs = {
 			"vocal-2025041506093425-aGVF33rK",
 			"vocal-2025041506101825-wWU9Oujm",
 			"vocal-2025041506103125-Y92GoTI0",
-			"vocal-2025041506103325-FvwsxG1o",
-			"vocal-2025041506104825-B1dQbpv7",
 		],
 
 		instrumental: [
@@ -127,8 +139,6 @@ const songs = {
 			"instrumental-2025041506093425-LUbcehBo",
 			"instrumental-2025041506101825-ZynIxAsW",
 			"instrumental-2025041506103125-SroyGxcp",
-			"instrumental-2025041506103325-9NFLvQSd",
-			"instrumental-2025041506104825-KOts5YhN",
 		],
 	},
 	Country: {
@@ -417,60 +427,83 @@ export async function POST(request: Request) {
 		const generateMusicFromLyrics = async ({
 			lyrics,
 			style = "Electronic" as z.infer<typeof SongStyle>,
+			numberOfSongs = 4,
 		}: {
 			lyrics: string;
 			style?: z.infer<typeof SongStyle>;
+			numberOfSongs?: number;
 		}) => {
 			try {
 				const selectedStyle = songs[style];
-				const randomIndex = Math.floor(
-					Math.random() * selectedStyle.voice.length,
-				);
-				const selectedVoice = selectedStyle.voice[randomIndex];
-				const selectedInstrumental = selectedStyle.instrumental[randomIndex];
 
 				if (!selectedStyle) {
 					throw new Error(`Style ${style} not found`);
 				}
 
-				const input = {
-					lyrics: lyrics,
-					voice_id: selectedVoice,
-					instrumental_id: selectedInstrumental,
-				};
-				console.log("trying to generate song");
-				const output = await replicate.run("minimax/music-01", {
-					input,
-				});
-				const fileName = `${
-					user.id
-				}-${Date.now()}-${selectedVoice}-${selectedInstrumental}.mp3`;
-				console.log("trying to upload song");
-				// @ts-expect-error
-				const blob = await output.blob(); // get the real binary blob, per replicate docs
-				const buffer = await blob.arrayBuffer();
-				const uint8Array = new Uint8Array(buffer);
+				// Generate unique random indices
+				const maxIndex = selectedStyle.voice.length;
+				const indices: number[] = [];
 
-				const { error } = await supabase()
-					.storage.from("songs")
-					.upload(fileName, uint8Array);
+				// Get unique random indices up to the requested number or max available
+				const songsToGenerate = Math.min(numberOfSongs, maxIndex);
 
-				if (error) throw error;
-
-				const { data: urlResult } = await supabase()
-					.storage.from("songs")
-					.createSignedUrl(fileName, 60 * 60 * 24 * 365 * 99999);
-
-				if (!urlResult?.signedUrl) {
-					throw new Error("Failed to generate song");
+				while (indices.length < songsToGenerate) {
+					const randomIndex = Math.floor(Math.random() * maxIndex);
+					if (!indices.includes(randomIndex)) {
+						indices.push(randomIndex);
+					}
 				}
 
-				return {
+				// Generate songs based on the indices
+				const generatedSongs = await Promise.all(
+					indices.map(async (index) => {
+						const selectedVoice = selectedStyle.voice[index];
+						const selectedInstrumental = selectedStyle.instrumental[index];
+
+						const input = {
+							lyrics: lyrics,
+							voice_id: selectedVoice,
+							instrumental_id: selectedInstrumental,
+						};
+
+						const output = await replicate.run("minimax/music-01", {
+							input,
+						});
+
+						const fileName = `${
+							user.id
+						}-${Date.now()}-${selectedVoice}-${selectedInstrumental}.mp3`;
+
+						// @ts-expect-error replicate doesnt have types for the output, but its correct per their docs
+						const blob = await output.blob();
+						const buffer = await blob.arrayBuffer();
+						const uint8Array = new Uint8Array(buffer);
+
+						const { error } = await supabase()
+							.storage.from("songs")
+							.upload(fileName, uint8Array);
+
+						if (error) throw error;
+
+						const { data: urlResult } = await supabase()
+							.storage.from("songs")
+							.createSignedUrl(fileName, 60 * 60 * 24 * 365 * 99999);
+
+						if (!urlResult?.signedUrl) {
+							throw new Error("Failed to generate song");
+						}
+
+						return urlResult.signedUrl;
+					}),
+				);
+
+				return generatedSongs.map((song) => ({
 					type: "birthdaySong",
-					songUrl: urlResult?.signedUrl,
+					songUrl: song,
 					lyrics: lyrics,
 					id: createId(),
-				} satisfies GeneratedAssetsDataSchema;
+					additionalSongs: generatedSongs.slice(1),
+				}));
 			} catch (error) {
 				throw new Error("Sorry, I encountered an error.");
 			}
@@ -484,38 +517,43 @@ export async function POST(request: Request) {
 			style?: z.infer<typeof SongStyle>;
 		}) => {
 			try {
-				const { songUrl } = await generateMusicFromLyrics({
+				const generatedSongs = await generateMusicFromLyrics({
 					lyrics,
 					style,
 				});
 
-				const response = await fetch(
-					"https://video-creator-service.onrender.com/create-video",
-					{
+				// Process songs and videos in parallel
+				const videoPromises = generatedSongs.map((song) =>
+					fetch("https://video-creator-service.onrender.com/create-video", {
 						method: "POST",
 						headers: {
 							"Content-Type": "application/json",
 						},
 						body: JSON.stringify({
 							imageUrls: transformedImages,
-							audioUrl: songUrl,
+							audioUrl: song.songUrl,
 						}),
-					},
+					})
+						.then(
+							(response) => response.json() as Promise<{ videoUrl: string }>,
+						)
+						.then((data) => ({
+							videoUrl: data.videoUrl,
+							songUrl: song.songUrl,
+						})),
 				);
 
-				const responseData = await response.json();
-				const videoUrl = responseData.videoUrl as string;
-				const assetId = createId();
-
-				await saveGeneratedAssets({
-					asset: {
+				const videoResponses = await Promise.all(videoPromises);
+				const videoAssets = videoResponses.map((videoResponse) => {
+					const assetId = createId();
+					return {
 						id: assetId,
 						type: "birthdayVideo",
 						data: {
 							id: assetId,
 							type: "birthdayVideo",
-							songUrl: songUrl,
-							videoUrl: videoUrl,
+							songUrl: videoResponse.songUrl,
+							videoUrl: videoResponse.videoUrl,
 							imagesUrl: transformedImages,
 							lyrics: lyrics,
 						},
@@ -524,17 +562,21 @@ export async function POST(request: Request) {
 						createdAt: new Date(),
 						updatedAt: new Date(),
 						title: chat?.title ?? "",
-					},
+					} as const;
 				});
 
-				return {
+				await saveGeneratedAssets({
+					assets: videoAssets,
+				});
+
+				return videoAssets.map((videoAsset) => ({
 					type: "birthdayVideo",
-					videoUrl: videoUrl,
+					videoUrl: videoAsset.data.videoUrl,
 					imagesUrl: transformedImages,
 					lyrics: lyrics,
-					id: assetId,
-					songUrl: songUrl,
-				} satisfies GeneratedAssetsDataSchema;
+					id: videoAsset.id,
+					songUrl: videoAsset.data.songUrl,
+				})) satisfies GeneratedAssetsDataSchema[];
 			} catch (error) {
 				console.error("Error generating video:", error);
 				throw error;
@@ -562,7 +604,6 @@ export async function POST(request: Request) {
 								),
 							}),
 							execute: async (params) => {
-								console.log("started generating video song");
 								const result = await db.transaction(async (tx) => {
 									const generationToken =
 										await tx.query.generationTokens.findFirst({
@@ -591,12 +632,37 @@ export async function POST(request: Request) {
 							},
 						},
 					},
-					onFinish: async (response) => {
+					onFinish: async ({ response }) => {
 						if (user.id) {
 							try {
-								// Skip response validation as the types are mismatched
-								// Just log the completion
-								console.log("Birthday song generation completed");
+								const assistantId = getTrailingMessageId({
+									messages: response.messages.filter(
+										(message) => message.role === "assistant",
+									),
+								});
+
+								if (!assistantId) {
+									throw new Error("No assistant message found!");
+								}
+
+								const [, assistantMessage] = appendResponseMessages({
+									messages: [userMessage],
+									responseMessages: response.messages,
+								});
+
+								await saveMessages({
+									messages: [
+										{
+											id: assistantId,
+											chatId: id,
+											role: assistantMessage?.role ?? "",
+											parts: assistantMessage?.parts,
+											attachments:
+												assistantMessage?.experimental_attachments ?? [],
+											createdAt: new Date(),
+										},
+									],
+								});
 							} catch (_) {
 								console.error("Failed to save chat");
 							}
@@ -618,34 +684,3 @@ export async function POST(request: Request) {
 		});
 	}
 }
-
-// export async function DELETE(request: Request) {
-// 	const { searchParams } = new URL(request.url);
-// 	const id = searchParams.get("id");
-
-// 	if (!id) {
-// 		return new Response("Not Found", { status: 404 });
-// 	}
-
-// 	const session = await auth();
-
-// 	if (!session || !session.user) {
-// 		return new Response("Unauthorized", { status: 401 });
-// 	}
-
-// 	try {
-// 		const chat = await getChatById({ id });
-
-// 		if (chat.userId !== session.user.id) {
-// 			return new Response("Unauthorized", { status: 401 });
-// 		}
-
-// 		await deleteChatById({ id });
-
-// 		return new Response("Chat deleted", { status: 200 });
-// 	} catch (error) {
-// 		return new Response("An error occurred while processing your request!", {
-// 			status: 500,
-// 		});
-// 	}
-// }
