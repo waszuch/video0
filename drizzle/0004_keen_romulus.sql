@@ -1,0 +1,1 @@
+ALTER TABLE "chats" ADD COLUMN "transformed_images" json NOT NULL;

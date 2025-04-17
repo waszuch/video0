@@ -1,7 +1,8 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { z } from "zod";
-import { createTRPCRouter, privateProcedure } from "@/server/api/trpc";
-import { chats, messages } from "@/server/db/schema";
+import { chats, generatedAssets, messages } from "@/server/db/schema";
+import { createTRPCRouter, privateProcedure } from "../trpc";
 
 export const chatsRouter = createTRPCRouter({
 	getChats: privateProcedure.query(async ({ ctx }) => {
@@ -30,5 +31,29 @@ export const chatsRouter = createTRPCRouter({
 			});
 
 			return foundChat;
+		}),
+	getChatGeneratedAssetsByChatId: privateProcedure
+		.input(
+			z.object({
+				chatId: z.string(),
+			}),
+		)
+		.query(async ({ input, ctx }) => {
+			const foundChat = await ctx.db.query.chats.findFirst({
+				where: and(
+					eq(chats.id, input.chatId),
+					eq(chats.profileId, ctx.user.id),
+				),
+			});
+
+			if (!foundChat) {
+				return [];
+			}
+
+			const assets = await ctx.db.query.generatedAssets.findMany({
+				where: eq(generatedAssets.chatId, input.chatId),
+			});
+
+			return assets;
 		}),
 });
