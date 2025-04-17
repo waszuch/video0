@@ -3,14 +3,12 @@
 import type { UIMessage } from "ai";
 import equal from "fast-deep-equal";
 import { AnimatePresence, motion } from "framer-motion";
-import { SparklesIcon } from "lucide-react";
+import Image from "next/image";
 import { memo } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { generatedAssetsDataSchema } from "@/server/schemas/generatedAssetsSchema";
 import { Markdown } from "./markdown";
-import Image from "next/image";
-import { useState, useRef, useEffect } from "react";
 
 const PurePreviewMessage = ({ message }: { message: UIMessage }) => {
 	return (
@@ -25,48 +23,62 @@ const PurePreviewMessage = ({ message }: { message: UIMessage }) => {
 				<div
 					className={cn(
 						"flex gap-3 md:gap-4 w-full",
-						message.role === "user" ? "justify-end" : ""
+						message.role === "user" ? "justify-end" : "",
 					)}
 				>
 					{message.role === "assistant" && (
 						<div className="size-8 flex items-center rounded-full justify-center shrink-0 bg-transparent">
-							<Image 
-								src="/icon.svg" 
-								alt="AI Assistant" 
-								width={28} 
-								height={28} 
+							<Image
+								src="/icon.svg"
+								alt="AI Assistant"
+								width={28}
+								height={28}
 								className="w-7 h-7"
 							/>
 						</div>
 					)}
 
-					<div className={cn(
-						"flex flex-col gap-3 md:gap-4 overflow-hidden",
-						message.role === "assistant" ? "w-[85%] md:w-[85%]" : "w-[85%] md:w-[75%]"
-					)}>
+					<div
+						className={cn(
+							"flex flex-col gap-3 md:gap-4 overflow-hidden",
+							message.role === "assistant"
+								? "w-[85%] md:w-[85%]"
+								: "w-[85%] md:w-[75%]",
+						)}
+					>
 						{message.parts?.map((part, index) => {
 							const { type } = part;
 							const key = `message-${message.id}-part-${index}`;
 
 							if (type === "text") {
-								if (part.text && (
-									part.text.includes('"type":"birthdayVideo"') ||
-									part.text.includes('"imagesUrl"') ||
-									(part.text.includes('"videoUrl"') && part.text.includes('"songUrl"') && part.text.includes('"lyrics"'))
-								)) {
+								if (
+									part.text &&
+									(part.text.includes('"type":"birthdayVideo"') ||
+										part.text.includes('"imagesUrl"') ||
+										(part.text.includes('"videoUrl"') &&
+											part.text.includes('"songUrl"') &&
+											part.text.includes('"lyrics"')))
+								) {
 									return null;
 								}
-								
+
 								return (
-									<div key={key} className={cn(
-										"flex flex-row gap-2 items-start",
-										message.role === "user" ? "justify-end" : ""
-									)}>
+									<div
+										key={key}
+										className={cn(
+											"flex flex-row gap-2 items-start",
+											message.role === "user" ? "justify-end" : "",
+										)}
+									>
 										<div
 											data-testid="message-content"
-											className={cn("flex flex-col gap-3 md:gap-4 overflow-hidden text-sm md:text-base", {
-												"bg-primary text-primary-foreground px-3 py-2 rounded-xl": message.role === "user",
-											})}
+											className={cn(
+												"flex flex-col gap-3 md:gap-4 overflow-hidden text-sm md:text-base",
+												{
+													"bg-primary text-primary-foreground px-3 py-2 rounded-xl":
+														message.role === "user",
+												},
+											)}
 										>
 											<Markdown>{part.text}</Markdown>
 										</div>
@@ -81,8 +93,8 @@ const PurePreviewMessage = ({ message }: { message: UIMessage }) => {
 								if (state === "call") {
 									if (toolName === "generateMusicFromLyrics") {
 										return <SongGeneratingIndicator key={toolCallId} />;
-									} 
-									if (toolName === "generateVideoFromMusic") {
+									}
+									if (toolName === "generateVideoSong") {
 										return <VideoGeneratingIndicator key={toolCallId} />;
 									}
 									return null;
@@ -90,21 +102,19 @@ const PurePreviewMessage = ({ message }: { message: UIMessage }) => {
 
 								if (state === "result") {
 									const { result } = toolInvocation;
-									const parsedResult = generatedAssetsDataSchema.parse(result);
 
-									if (parsedResult.type === "birthdaySong") {
-
+									if (result.type === "birthdaySong") {
 										return (
 											<div key={toolCallId}>
 												<SongPlayer
-													songUrl={parsedResult.songUrl}
-													linkToSongPage={`/happy-birthday/${parsedResult.id}`}
+													songUrl={result.songUrl}
+													linkToSongPage={`/happy-birthday/${result.id}`}
 												/>
 											</div>
 										);
 									}
-									if (parsedResult.type === "birthdayVideo") {
-										return <VideoPlayer key={toolCallId} videoData={parsedResult} />;
+									if (result.type === "birthdayVideo") {
+										return <VideoPlayer key={toolCallId} videoData={result} />;
 									}
 								}
 							}
@@ -120,8 +130,10 @@ const PurePreviewMessage = ({ message }: { message: UIMessage }) => {
 export const PreviewMessage = memo(
 	PurePreviewMessage,
 	(prevProps, nextProps) => {
-		return prevProps.message.id === nextProps.message.id && 
-		       equal(prevProps.message.parts, nextProps.message.parts);
+		return (
+			prevProps.message.id === nextProps.message.id &&
+			equal(prevProps.message.parts, nextProps.message.parts)
+		);
 	},
 );
 
@@ -133,18 +145,20 @@ export const ThinkingMessage = () => {
 			animate={{ y: 0, opacity: 1, transition: { delay: 1 } }}
 			data-role="assistant"
 		>
-			<div className={cn(
-				"flex gap-3 md:gap-4 group-data-[role=user]/message:px-3 w-full group-data-[role=user]/message:w-fit group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl group-data-[role=user]/message:py-2 rounded-xl",
-				{
-					"group-data-[role=user]/message:bg-muted": true,
-				},
-			)}>
+			<div
+				className={cn(
+					"flex gap-3 md:gap-4 group-data-[role=user]/message:px-3 w-full group-data-[role=user]/message:w-fit group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl group-data-[role=user]/message:py-2 rounded-xl",
+					{
+						"group-data-[role=user]/message:bg-muted": true,
+					},
+				)}
+			>
 				<div className="size-7 md:size-8 flex items-center rounded-full justify-center shrink-0 bg-transparent">
-					<Image 
-						src="/icon.svg" 
-						alt="AI Assistant" 
-						width={28} 
-						height={28} 
+					<Image
+						src="/icon.svg"
+						alt="AI Assistant"
+						width={28}
+						height={28}
 						className="w-7 h-7"
 					/>
 				</div>
@@ -219,20 +233,30 @@ const VideoGeneratingIndicator = () => (
 	</div>
 );
 
-const VideoPlayer = ({ videoData }: { videoData: { videoUrl: string, imagesUrl: string[], songUrl: string, lyrics: string } }) => {
-	const isMP4Video = videoData.videoUrl.startsWith('data:video/mp4') || 
-	                  videoData.videoUrl.startsWith('data:video/mp4;base64');
+const VideoPlayer = ({
+	videoData,
+}: {
+	videoData: {
+		videoUrl: string;
+		imagesUrl: string[];
+		songUrl: string;
+		lyrics: string;
+	};
+}) => {
+	const isMP4Video =
+		videoData.videoUrl.startsWith("data:video/mp4") ||
+		videoData.videoUrl.startsWith("data:video/mp4;base64");
 	const isVideoSameAsSong = videoData.videoUrl === videoData.songUrl;
 	const [hasError, setHasError] = useState(false);
 	const [isRetrying, setIsRetrying] = useState(false);
 	const videoRef = useRef<HTMLVideoElement>(null);
-	
+
 	const retryPlayback = () => {
 		if (videoRef.current && hasError && !isRetrying) {
 			setIsRetrying(true);
 			const currentSrc = videoRef.current.src;
 			videoRef.current.src = "";
-			
+
 			setTimeout(() => {
 				if (videoRef.current) {
 					videoRef.current.src = currentSrc;
@@ -244,22 +268,22 @@ const VideoPlayer = ({ videoData }: { videoData: { videoUrl: string, imagesUrl: 
 			}, 100);
 		}
 	};
-	
+
 	useEffect(() => {
 		if (hasError) {
 			retryPlayback();
 		}
 	}, [hasError]);
-	
+
 	return (
 		<div className="mt-2 p-2 md:p-3 bg-muted/50 rounded-md overflow-hidden w-full">
 			<div className="mb-2 md:mb-4 overflow-hidden">
-				<video 
+				<video
 					ref={videoRef}
 					controls
 					autoPlay={false}
 					preload="metadata"
-					className="w-full rounded-md max-w-full" 
+					className="w-full rounded-md max-w-full"
 					style={{ maxHeight: "300px", objectFit: "contain" }}
 					playsInline
 					onError={() => setHasError(true)}
@@ -271,7 +295,7 @@ const VideoPlayer = ({ videoData }: { videoData: { videoUrl: string, imagesUrl: 
 					If video doesn't play, try downloading it using the button below.
 				</div>
 			</div>
-		
+
 			{isMP4Video && !isVideoSameAsSong && (
 				<a
 					href={videoData.videoUrl}

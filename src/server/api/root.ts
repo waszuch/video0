@@ -1,6 +1,7 @@
+import { profileRouter } from "@/server/api/routers/profile";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 import { chatsRouter } from "./routers/chats";
-import { profileRouter } from "@/server/api/routers/profile";
+import { imageGenRouter } from "./routers/imageGen";
 import { tokensRouter } from "./routers/tokens";
 /**
  * This is the primary router for your server.
@@ -8,9 +9,10 @@ import { tokensRouter } from "./routers/tokens";
  * All routers added in /api/routers should be manually added here.
  */
 export const appRouter = createTRPCRouter({
-  chats: chatsRouter,
-  profile: profileRouter,
-  tokens: tokensRouter,
+	chats: chatsRouter,
+	profile: profileRouter,
+	tokens: tokensRouter,
+	imageGen: imageGenRouter,
 });
 
 // export type definition of API

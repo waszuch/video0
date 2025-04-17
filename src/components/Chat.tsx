@@ -5,34 +5,63 @@ import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
 import type { UIMessage } from "ai";
 import { AnimatePresence, motion } from "framer-motion";
 import { SendHorizontalIcon } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
+import { MouseEventGlow } from "@/components/MouseEventGlow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { api } from "@/trpc/react";
 import { useUser } from "./AuthProvider/AuthProvider";
 import { ChatMessages } from "./ChatMessages";
-import { MouseEventGlow } from "@/components/MouseEventGlow";
+import { ImageInput } from "./ImageInput";
 
-export function Chat({
+export const Chat = ({
 	id,
 	initialMessages,
+	initialTransformedImages = [],
 }: {
 	id: string;
 	initialMessages: Array<UIMessage>;
+	initialTransformedImages: string[];
+}) => {
+	const [transformedImages, setTransformedImages] = useState<string[]>(
+		initialTransformedImages,
+	);
+
+	if (transformedImages.length > 0) {
+		return (
+			<ChatContent
+				id={id}
+				initialMessages={initialMessages}
+				transformedImages={transformedImages}
+			/>
+		);
+	}
+
+	return <ImageInput chatId={id} onImagesUploaded={setTransformedImages} />;
+};
+
+export function ChatContent({
+	id,
+	initialMessages,
+	transformedImages,
+}: {
+	id: string;
+	initialMessages: Array<UIMessage>;
+	transformedImages: string[];
 }) {
 	const { user } = useUser();
 	const { data: availableTokens } = api.tokens.get.useQuery(undefined, {
 		enabled: !!user,
 	});
 
-	const { mutateAsync: checkout, isPending: isCheckoutPending } =
-		api.tokens.checkout.useMutation();
+	const { mutateAsync: checkout } = api.tokens.checkout.useMutation();
 
 	const trpcUtils = api.useUtils();
 	const { messages, handleSubmit, input, setInput, isLoading, status } =
 		useChat({
 			id,
-			body: { id },
+			body: { id, transformedImages },
 			initialMessages,
 			experimental_throttle: 100,
 			sendExtraMessageFields: true,
@@ -68,7 +97,7 @@ export function Chat({
 				<div className="relative z-10 flex-1 overflow-hidden">
 					<ChatMessages status={status} messages={messages} />
 				</div>
-				<form 
+				<form
 					className="sticky bottom-0 left-0 right-0 flex items-center gap-2 border-t border-purple-700/30 bg-black p-3 md:p-4 z-10"
 					onSubmit={(e) => {
 						e.preventDefault();
@@ -92,16 +121,19 @@ export function Chat({
 							) {
 								event.preventDefault();
 								if (status !== "ready") {
-									toast.error("Please wait for the model to finish its response!");
+									toast.error(
+										"Please wait for the model to finish its response!",
+									);
 								} else {
 									submitInput();
 								}
 							}
 						}}
 					/>
-					<Button 
-						type="submit" 
-						size="icon" 
+
+					<Button
+						type="submit"
+						size="icon"
 						disabled={!input.trim()}
 						className="bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white h-12 w-12 md:h-10 md:w-10"
 					>
