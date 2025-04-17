@@ -574,6 +574,7 @@ export async function POST(request: Request) {
 							try {
 								// Skip response validation as the types are mismatched
 								// Just log the completion
+								console.log("Birthday song generation completed");
 							} catch (_) {
 								console.error("Failed to save chat");
 							}
