@@ -10,10 +10,13 @@ import { toast } from "sonner";
 import { MouseEventGlow } from "@/components/MouseEventGlow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { useUser } from "./AuthProvider/AuthProvider";
 import { ChatMessages } from "./ChatMessages";
 import { ImageInput } from "./ImageInput";
+import { Card, CardContent } from "./ui/card";
+import { ScrollArea } from "./ui/scroll-area";
 
 export const Chat = ({
 	id,
@@ -27,6 +30,19 @@ export const Chat = ({
 	const [transformedImages, setTransformedImages] = useState<string[]>(
 		initialTransformedImages,
 	);
+
+	const { data: generatedAssets } =
+		api.chats.getChatGeneratedAssetsByChatId.useQuery(
+			{ chatId: id },
+			{ enabled: !!id },
+		);
+
+	const hasGeneratedAssets =
+		typeof generatedAssets !== "undefined" && generatedAssets.length > 0;
+
+	if (hasGeneratedAssets) {
+		return <GeneratedAssets generatedAssets={generatedAssets} />;
+	}
 
 	if (transformedImages.length > 0) {
 		return (
@@ -67,6 +83,9 @@ export function ChatContent({
 			sendExtraMessageFields: true,
 			generateId: () => crypto.randomUUID(),
 			onFinish: () => {
+				trpcUtils.chats.getChatGeneratedAssetsByChatId.invalidate({
+					chatId: id,
+				});
 				trpcUtils.chats.getChatMessagesByChatId.invalidate({
 					chatId: id,
 				});
@@ -143,5 +162,71 @@ export function ChatContent({
 				</form>
 			</div>
 		</AnimatePresence>
+	);
+}
+
+interface GeneratedAsset {
+	id: string;
+	type: "birthdaySong" | "birthdayVideo";
+	data: {
+		songUrl: string;
+		lyrics: string;
+		videoUrl?: string;
+		imagesUrl?: string[];
+	};
+}
+
+interface GeneratedAssetsProps {
+	generatedAssets: GeneratedAsset[];
+}
+
+export function GeneratedAssets({ generatedAssets }: GeneratedAssetsProps) {
+	return (
+		<ScrollArea className="flex-1 h-full">
+			<div className="flex gap-4 z-50 w-full flex-wrap justify-center p-4">
+				{generatedAssets.map((asset) => (
+					<Card
+						key={asset.id}
+						className="max-w-[500px] w-full bg-gradient-to-br from-purple-600/10 to-pink-600/10 hover:from-purple-700/10 hover:to-pink-700/10 border-purple-700/30"
+					>
+						<CardContent>
+							{asset.type === "birthdaySong" && (
+								<audio
+									src={asset.data.songUrl}
+									className="w-full max-w-[500px]"
+								>
+									<track kind="captions" />
+								</audio>
+							)}
+							{asset.type === "birthdayVideo" && asset.data.videoUrl && (
+								<div className="flex justify-center flex-col gap-2">
+									<video
+										src={asset.data.videoUrl}
+										controls
+										className="max-w-[500px] w-full rounded-lg"
+									>
+										<track kind="captions" />
+										Your browser does not support the video element.
+									</video>
+									<Button
+										className="text-sm text-gray-400"
+										onClick={() => {
+											const url = new URL(
+												`/happy-birthday/${asset.id}`,
+												window.location.origin,
+											);
+											navigator.clipboard.writeText(url.toString());
+											toast.success("Link copied to clipboard");
+										}}
+									>
+										Copy link
+									</Button>
+								</div>
+							)}
+						</CardContent>
+					</Card>
+				))}
+			</div>
+		</ScrollArea>
 	);
 }
