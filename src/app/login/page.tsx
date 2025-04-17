@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import AnimatedLogo from "@/components/AnimatedLogo";
-import { MouseEventGlow } from "@/components/MouseEventGlow";
+// import { MouseEventGlow } from "@/components/MouseEventGlow";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { GoogleLoginButton } from "@/components/GoogleLoginButton";
 
@@ -24,7 +24,7 @@ const Testimonial = () => (
 
 const LeftPanel = () => (
 	<div className="relative hidden h-full flex-col p-10 text-white lg:flex dark:border-r">
-		<div className="absolute inset-0 bg-gradient-to-b from-purple-600 to-pink-600 opacity-20" />
+		<div className="absolute inset-0 bg-gradient-to-b from-purple-600 to-indigo-600 opacity-20" />
 		
 		<div className="relative z-20 flex items-center font-medium text-lg mb-6">
 			<Link href="/">
@@ -86,7 +86,7 @@ const LoginForm = () => (
 export default function LoginPage() {
 	return (
 		<div className="relative flex min-h-screen flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0 bg-black text-white font-archivo">
-			<MouseEventGlow />
+			{/* <MouseEventGlow /> */}
 			<LeftPanel />
 			<LoginForm />
 		</div>
