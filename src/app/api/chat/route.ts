@@ -604,7 +604,7 @@ export async function POST(request: Request) {
 								),
 							}),
 							execute: async (params) => {
-								const result = await db.transaction(async (tx) => {
+								await db.transaction(async (tx) => {
 									const generationToken =
 										await tx.query.generationTokens.findFirst({
 											where: eq(generationTokens.profileId, user.id),
@@ -625,10 +625,8 @@ export async function POST(request: Request) {
 										generationTokenId: generationToken.id,
 										id: uuidv4(),
 									});
-
-									return generateVideoSong(params);
 								});
-								return result;
+								return generateVideoSong(params);
 							},
 						},
 					},

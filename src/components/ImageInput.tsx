@@ -360,6 +360,10 @@ export function ImageInput({
 												<p className="text-xs text-gray-600 mb-3">
 													PNG, JPG, GIF (max 10MB)
 												</p>
+												<p className="text-xs text-amber-400/90 mb-3">
+													Include clear photos showing their face for best
+													results
+												</p>
 												<p className="text-xs font-medium text-pink-400 mt-2">
 													{previewUrls.length === 0
 														? `Upload ${MAX_IMAGES} photos of the birthday person`
