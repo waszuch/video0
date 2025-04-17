@@ -3,7 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
 import type { UIMessage } from "ai";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { SendHorizontalIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
