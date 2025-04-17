@@ -1,5 +1,5 @@
 {
-  "id": "6b744331-6aea-42dd-9feb-64f48c9d49ff",
+  "id": "7441f6ba-fd17-4591-87ff-9aa87d751751",
   "prevId": "bbafeb65-2851-4abb-bd75-82ee9bf41407",
   "version": "7",
   "dialect": "postgresql",
@@ -37,7 +37,8 @@
           "name": "transformed_images",
           "type": "json",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": "'[]'::json"
         }
       },
       "indexes": {},

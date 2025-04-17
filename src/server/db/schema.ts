@@ -35,7 +35,10 @@ export const chats = pgTable("chats", {
 	profileId: uuid("profileId")
 		.notNull()
 		.references(() => profiles.id),
-	transformedImages: json("transformed_images").$type<string[]>().notNull(),
+	transformedImages: json("transformed_images")
+		.$type<string[]>()
+		.notNull()
+		.default([]),
 });
 
 export const messages = pgTable("messages", {
