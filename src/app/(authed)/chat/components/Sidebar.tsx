@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { api } from "@/trpc/react";
 import AnimatedLogo from "@/components/AnimatedLogo";
 import { cn } from "@/lib/utils";
+import { TokenDisplay } from "@/components/TokenDisplay";
 
 const navItems = [
 	{ name: "Privacy", href: "/privacy", icon: (
@@ -55,11 +56,11 @@ export default function Sidebar() {
 				asChild
 				className="bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white mb-6 py-6 md:py-4"
 			>
-				<Link href="/chat/" className="flex items-center justify-center gap-2">
-					<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+				<Link href="/chat/" className="flex items-center justify-center gap-2 group">
+					<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transition-transform duration-200 group-hover:scale-125" viewBox="0 0 20 20" fill="currentColor">
 						<path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
 					</svg>
-					Create new Birthday Video
+					Create new video
 				</Link>
 			</Button>
 
@@ -87,6 +88,8 @@ export default function Sidebar() {
 					})}
 				</ul>
 			</nav>
+
+			<TokenDisplay />
 
 			<div className="border-t border-purple-700/30 pt-4 mt-auto">
 				<UserDropdown />

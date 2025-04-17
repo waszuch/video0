@@ -43,6 +43,35 @@ export const tokensRouter = createTRPCRouter({
 
 		return tokens.availableTokens ?? 0;
 	}),
+	getInitial: privateProcedure.query(async ({ ctx }) => {
+		const { user } = ctx;
+		if (!user) {
+			throw new TRPCError({ code: "UNAUTHORIZED" });
+		}
+
+		let tokens = await db.query.generationTokens.findFirst({
+			where: eq(generationTokens.profileId, user.id),
+			columns: {
+				initialTokenAmount: true,
+			},
+		});
+
+		if (!tokens) {
+			tokens = (
+				await db
+					.insert(generationTokens)
+					.values({
+						id: crypto.randomUUID(),
+						profileId: user.id,
+						availableTokens: FREE_INITIAL_TOKEN_AMOUNT,
+						initialTokenAmount: FREE_INITIAL_TOKEN_AMOUNT,
+					})
+					.returning()
+			)?.[0];
+		}
+
+		return tokens?.initialTokenAmount ?? FREE_INITIAL_TOKEN_AMOUNT;
+	}),
 	checkout: privateProcedure
 		.input(
 			z.object({
