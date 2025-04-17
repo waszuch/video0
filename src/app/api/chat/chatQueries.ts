@@ -7,6 +7,21 @@ import {
 	messages,
 } from "@/server/db/schema";
 
+export async function updateChatTitle({
+	id,
+	title,
+}: {
+	id: string;
+	title: string;
+}) {
+	try {
+		return await db.update(chats).set({ title }).where(eq(chats.id, id));
+	} catch (error) {
+		console.error("Failed to update chat title in database", error);
+		throw error;
+	}
+}
+
 export async function saveChat({
 	id,
 	profileId,

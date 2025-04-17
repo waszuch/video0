@@ -108,12 +108,14 @@ export const imageGenRouter = createTRPCRouter({
 				const transformedImagesUrls = generationResults
 					.map((result) => result?.transformedImageUrl.signedUrl)
 					.filter(Boolean) as string[];
-				await ctx.db
-					.update(chats)
-					.set({
-						transformedImages: transformedImagesUrls,
-					})
-					.where(eq(chats.id, input.chatId));
+
+				await ctx.db.insert(chats).values({
+					id: input.chatId,
+					transformedImages: transformedImagesUrls,
+					createdAt: new Date(),
+					title: "",
+					profileId: user.id,
+				});
 
 				return {
 					success: true,

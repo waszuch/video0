@@ -23,6 +23,7 @@ import {
 	saveChat,
 	saveGeneratedAssets,
 	saveMessages,
+	updateChatTitle,
 } from "./chatQueries";
 import { getMostRecentUserMessage } from "./utilts";
 
@@ -391,6 +392,14 @@ export async function POST(request: Request) {
 			});
 
 			await saveChat({ id, profileId: user.id, title });
+		}
+
+		if (chat?.title === "") {
+			const title = await generateTitleFromUserMessage({
+				message: userMessage,
+			});
+
+			await updateChatTitle({ id, title });
 		}
 
 		await saveMessages({
