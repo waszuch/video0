@@ -4,7 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
 import type { UIMessage } from "ai";
 import { AnimatePresence, motion } from "framer-motion";
-import { SendHorizontalIcon } from "lucide-react";
+import { CopyIcon, DownloadIcon, SendHorizontalIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { MouseEventGlow } from "@/components/MouseEventGlow";
@@ -236,19 +236,51 @@ export function GeneratedAssets({
 													<track kind="captions" />
 													Your browser does not support the video element.
 												</video>
-												<Button
-													className="text-sm text-gray-400"
-													onClick={() => {
-														const url = new URL(
-															`/happy-birthday/${asset.id}`,
-															window.location.origin,
-														);
-														navigator.clipboard.writeText(url.toString());
-														toast.success("Link copied to clipboard");
-													}}
-												>
-													Copy link
-												</Button>
+												<div className="flex gap-2 justify-end">
+													<Button
+														className="text-sm text-gray-400 cursor-pointer"
+														onClick={() => {
+															const url = new URL(
+																`/happy-birthday/${asset.id}`,
+																window.location.origin,
+															);
+															navigator.clipboard.writeText(url.toString());
+															toast.success("Link copied to clipboard");
+														}}
+													>
+														<CopyIcon className="w-4 h-4" />
+														Copy link
+													</Button>
+													<Button
+														className="text-sm text-gray-400 cursor-pointer"
+														onClick={() => {
+															if ("videoUrl" in asset.data) {
+																const videoUrl = asset.data.videoUrl;
+																const downloadVideo = async () => {
+																	try {
+																		const response = await fetch(videoUrl);
+																		const blob = await response.blob();
+																		const url =
+																			window.URL.createObjectURL(blob);
+																		const a = document.createElement("a");
+																		a.href = url;
+																		a.download = `birthday-video-${asset.id}.mp4`;
+																		document.body.appendChild(a);
+																		a.click();
+																		window.URL.revokeObjectURL(url);
+																		document.body.removeChild(a);
+																	} catch (error) {
+																		toast.error("Failed to download video");
+																	}
+																};
+																downloadVideo();
+															}
+														}}
+													>
+														<DownloadIcon className="w-4 h-4" />
+														Download video
+													</Button>
+												</div>
 											</div>
 										)}
 								</CardContent>
