@@ -34,6 +34,7 @@ export const imageGenRouter = createTRPCRouter({
 							prompt:
 								"Cartoon character, attractive and charming. Celebrating their birthday. Attractive. Happy",
 							aspect_ratio: "9:16",
+							model: "photon-1",
 							character_ref: {
 								identity0: { images: [imageUrl] },
 							},

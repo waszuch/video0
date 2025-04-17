@@ -626,6 +626,7 @@ export async function POST(request: Request) {
 										id: uuidv4(),
 									});
 								});
+								console.log("Generating video song");
 								return generateVideoSong(params);
 							},
 						},

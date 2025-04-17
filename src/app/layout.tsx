@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 import { CSPostHogProvider } from "@/components/Posthog/PosthogProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { TRPCReactProvider } from "@/trpc/react";
-import { microgamma, archivo } from './fonts';
+import { archivo, microgamma } from "./fonts";
 
 export const metadata: Metadata = {
 	title: "Video0.dev",
@@ -26,12 +26,15 @@ export default async function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
 	const _headers = await headers();
 	return (
-		<html lang="en" className={`${geist.variable} ${microgamma.variable} ${archivo.variable}`}>
+		<html
+			lang="en"
+			className={`${geist.variable} ${microgamma.variable} ${archivo.variable}`}
+		>
 			<body className={inter.className}>
 				<CSPostHogProvider>
 					<TRPCReactProvider headers={_headers}>{children}</TRPCReactProvider>
 				</CSPostHogProvider>
-				<Toaster />
+				<Toaster richColors position="top-right" />
 			</body>
 		</html>
 	);

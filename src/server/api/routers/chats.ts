@@ -27,6 +27,7 @@ export const chatsRouter = createTRPCRouter({
 				),
 				with: {
 					messages: { orderBy: asc(messages.createdAt) },
+					generatedAssets: { orderBy: asc(generatedAssets.createdAt) },
 				},
 			});
 
