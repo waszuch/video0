@@ -3,7 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
 import type { UIMessage } from "ai";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { SendHorizontalIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -94,18 +94,6 @@ export function ChatContent({
 		<AnimatePresence>
 			<div className="flex flex-col min-w-0 h-dvh bg-black text-white font-archivo relative overflow-x-hidden">
 				<MouseEventGlow />
-				<motion.div
-					className="absolute top-2 right-2 z-10 bg-background px-4 py-1 rounded-full border-border border-2 flex items-center gap-2 text-xs font-semibold"
-					initial={{ opacity: 0, y: 10 }}
-					animate={{ opacity: 1, y: 0 }}
-					exit={{ opacity: 0, y: 10 }}
-					transition={{ duration: 0.3 }}
-				>
-					Tokens left
-					<span className="font-bold bg-black text-white rounded-full flex items-center w-10 h-10 justify-center aspect-square shrink-0 border-border border">
-						{availableTokens}
-					</span>
-				</motion.div>
 				<div className="relative z-10 flex-1 overflow-hidden">
 					<ChatMessages status={status} messages={messages} />
 				</div>

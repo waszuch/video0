@@ -37,7 +37,7 @@ export const UserDropdown = () => {
 			<DropdownMenuTrigger asChild>
 				<Button
 					size="lg"
-					className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground flex items-center gap-3 px-2 py-1.5 rounded-lg w-full"
+					className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground flex items-center gap-3 px-2 py-1.5 rounded-lg w-full cursor-pointer"
 					variant="ghost"
 				>
 					<Avatar className="h-8 w-8 rounded-lg">
@@ -82,6 +82,7 @@ export const UserDropdown = () => {
 				<DropdownMenuSeparator />
 				<DropdownMenuGroup>
 					<DropdownMenuItem
+						className="cursor-pointer"
 						onMouseDown={() =>
 							checkout({}).then((checkout) => {
 								PolarEmbedCheckout.create(checkout.url, "dark");
@@ -90,7 +91,7 @@ export const UserDropdown = () => {
 					>
 						<Sparkles className="mr-2 size-4" />
 						Buy more credits
-					</DropdownMenuItem>
+					</DropdownMenuItem >
 				</DropdownMenuGroup>
 				{/* <DropdownMenuSeparator /> */}
 				{/* <DropdownMenuGroup>
@@ -108,7 +109,7 @@ export const UserDropdown = () => {
 					</DropdownMenuItem>
 				</DropdownMenuGroup> */}
 				<DropdownMenuSeparator />
-				<DropdownMenuItem onClick={() => supabase().auth.signOut()}>
+				<DropdownMenuItem className="cursor-pointer" onClick={() => supabase().auth.signOut()}>
 					<LogOut className="mr-2 size-4" />
 					Log out
 				</DropdownMenuItem>

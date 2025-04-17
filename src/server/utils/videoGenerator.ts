@@ -45,7 +45,7 @@ export async function createVideoFromImagesAndAudio(
 					);
 
 					await sharp(Buffer.from(buffer))
-						.resize(1364, 1024)
+						.resize(576, 1024) // 9:16 aspect ratio
 						.jpeg()
 						.toFile(outputPath);
 
