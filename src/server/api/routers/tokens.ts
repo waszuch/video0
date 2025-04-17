@@ -1,5 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
+import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { env } from "@/env";
 import { FREE_INITIAL_TOKEN_AMOUNT, POLAR_PRODUCT_IDS } from "@/lib/contants";
@@ -7,7 +8,6 @@ import { createTRPCRouter, privateProcedure } from "@/server/api/trpc";
 import { db } from "@/server/db";
 import { type DBGenerationToken, generationTokens } from "@/server/db/schema";
 import { polar } from "@/utils/polar";
-
 export const tokensRouter = createTRPCRouter({
 	get: privateProcedure.query(async ({ ctx }) => {
 		const { user } = ctx;
@@ -28,7 +28,7 @@ export const tokensRouter = createTRPCRouter({
 				await db
 					.insert(generationTokens)
 					.values({
-						id: crypto.randomUUID(),
+						id: uuidv4(),
 						profileId: user.id,
 						availableTokens: FREE_INITIAL_TOKEN_AMOUNT,
 						initialTokenAmount: FREE_INITIAL_TOKEN_AMOUNT,
