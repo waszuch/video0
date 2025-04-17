@@ -32,7 +32,7 @@ export const imageGenRouter = createTRPCRouter({
 						// Create individual generation for each image
 						const generation = await client.generations.image.create({
 							prompt:
-								"Cartoon character, attractive and charming. Celebrating their birthday. Attractive. Happy",
+								"Cartoon character, attractive and charming, Celebrating their birthday",
 							aspect_ratio: "9:16",
 							model: "photon-1",
 							character_ref: {
