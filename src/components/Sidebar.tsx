@@ -1,12 +1,12 @@
-"use client";
+/** biome-ignore-all lint/a11y/noSvgWithoutTitle: <explanation> */
+
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Suspense } from "react";
 import AnimatedLogo from "@/components/AnimatedLogo";
 import { TokenDisplay } from "@/components/TokenDisplay";
 import { UserDropdown } from "@/components/UserDropdown";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { api } from "@/trpc/react";
+import { SuspendedSidebarContent } from "./SuspendedSidebarContent";
 
 const navItems = [
 	{
@@ -47,11 +47,6 @@ const navItems = [
 	},
 ];
 
-const formatChatTitle = (title: string | null) => {
-	if (!title) return "Untitled Chat";
-	return title.length > 25 ? title.substring(0, 22) + "..." : title;
-};
-
 const LegalLink = ({
 	href,
 	children,
@@ -73,9 +68,6 @@ const LegalLink = ({
 );
 
 export default function Sidebar() {
-	const { data: chats = [] } = api.chats.getChats.useQuery();
-	const pathname = usePathname();
-
 	return (
 		<aside className="w-[260px] md:w-[280px] bg-black/95 backdrop-blur-sm border-r border-purple-700/30 h-screen p-4 font-archivo text-white flex flex-col shadow-xl md:shadow-none">
 			<div className="flex items-center justify-between mb-6">
@@ -117,24 +109,22 @@ export default function Sidebar() {
 
 			<nav className="flex-1 overflow-y-auto scrollbar-hide">
 				<ul className="space-y-3 px-1">
-					{chats.map((item) => {
-						const isActive = pathname === `/chat/${item.id}`;
-						return (
-							<li key={item.id}>
-								<Link
-									href={`/chat/${item.id}`}
-									className={cn(
-										"block py-3 px-4 rounded-md text-sm border transition-all duration-200",
-										isActive
-											? "bg-purple-700/30 border-purple-500/50 text-white shadow-sm shadow-purple-700/20"
-											: "border-purple-700/20 bg-black/40 text-gray-300 hover:bg-purple-700/20 hover:border-purple-700/40 hover:shadow-sm hover:shadow-purple-700/10",
-									)}
-								>
-									{formatChatTitle(item.title)}
-								</Link>
-							</li>
-						);
-					})}
+					<Suspense
+						fallback={
+							// biome-ignore lint/complexity/noUselessFragments: <explanation>
+							<>
+								{[1, 2, 3].map((i) => (
+									<li key={i}>
+										<div className="block py-3 px-4 rounded-md text-sm border border-purple-700/20 bg-black/40 text-gray-300">
+											<div className="h-4 w-3/4 bg-purple-700/20 rounded animate-pulse" />
+										</div>
+									</li>
+								))}
+							</>
+						}
+					>
+						<SuspendedSidebarContent />
+					</Suspense>
 				</ul>
 			</nav>
 

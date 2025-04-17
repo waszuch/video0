@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
-import Sidebar from "./components/Sidebar";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import Sidebar from "../../../components/Sidebar";
 
 export default function ChatLayout({
 	children,
@@ -15,19 +15,19 @@ export default function ChatLayout({
 
 	useEffect(() => {
 		const checkIfMobile = () => setIsMobile(window.innerWidth < 768);
-		
+
 		checkIfMobile();
 		window.addEventListener("resize", checkIfMobile);
-		
+
 		return () => window.removeEventListener("resize", checkIfMobile);
 	}, []);
 
 	useEffect(() => {
 		if (!isMobile) return;
-		
+
 		const handleClickOutside = (e: MouseEvent) => {
 			const target = e.target as HTMLElement;
-			if (sidebarOpen && !target.closest('aside')) {
+			if (sidebarOpen && !target.closest("aside")) {
 				setSidebarOpen(false);
 			}
 		};
@@ -38,19 +38,20 @@ export default function ChatLayout({
 
 	return (
 		<div className="flex min-h-screen overflow-hidden max-w-full relative">
-			<Button 
+			<Button
 				onClick={() => setSidebarOpen(!sidebarOpen)}
-				className={`md:hidden fixed top-3 left-3 z-40 size-10 p-2 bg-black/70 border border-purple-700/30 rounded-md ${sidebarOpen ? 'hidden' : 'flex'}`}
+				className={`md:hidden fixed top-3 left-3 z-40 size-10 p-2 bg-black/70 border border-purple-700/30 rounded-md ${sidebarOpen ? "hidden" : "flex"}`}
 				variant="ghost"
 			>
 				<Menu className="text-white" />
 			</Button>
 
-			<div className={`${isMobile ? 'fixed inset-0 z-30 transform transition-transform duration-300 ease-in-out' : 'relative'} 
-				${isMobile && !sidebarOpen ? '-translate-x-full' : 'translate-x-0'}`}
+			<div
+				className={`${isMobile ? "fixed inset-0 z-30 transform transition-transform duration-300 ease-in-out" : "relative"} 
+				${isMobile && !sidebarOpen ? "-translate-x-full" : "translate-x-0"}`}
 			>
 				{isMobile && sidebarOpen && (
-					<Button 
+					<Button
 						onClick={() => setSidebarOpen(false)}
 						className="absolute top-3 right-3 z-40 size-10 p-2 bg-black/70 border border-purple-700/30 rounded-md"
 						variant="ghost"
@@ -61,7 +62,7 @@ export default function ChatLayout({
 				<Sidebar />
 			</div>
 
-			<main className={`flex-1 overflow-hidden ${isMobile ? 'ml-0' : ''}`}>
+			<main className={`flex-1 overflow-hidden ${isMobile ? "ml-0" : ""}`}>
 				{children}
 			</main>
 		</div>
