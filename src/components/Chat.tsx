@@ -10,7 +10,6 @@ import { toast } from "sonner";
 import { MouseEventGlow } from "@/components/MouseEventGlow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { useUser } from "./AuthProvider/AuthProvider";
 import { ChatMessages } from "./ChatMessages";
@@ -36,6 +35,7 @@ export const Chat = ({
 			{ chatId: id },
 			{ enabled: !!id },
 		);
+	console.log({ generatedAssets });
 
 	const hasGeneratedAssets =
 		typeof generatedAssets !== "undefined" && generatedAssets.length > 0;

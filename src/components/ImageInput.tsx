@@ -46,6 +46,7 @@ export function ImageInput({
 				if (transformedUrls.length > 0) {
 					setCartoonizedUrls(transformedUrls);
 					onImagesUploaded?.(transformedUrls);
+					window.history.replaceState({}, "", `/chat/${chatId}`);
 					toast.success("Images processed successfully");
 				}
 			} else {

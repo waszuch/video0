@@ -17,7 +17,6 @@ import { db } from "@/server/db";
 import { generationTokens, generationTransactions } from "@/server/db/schema";
 import type { GeneratedAssetsDataSchema } from "@/server/schemas/generatedAssetsSchema";
 import { supabase } from "@/server/supabase/supabaseClient";
-import { createVideoFromImagesAndAudio } from "@/server/utils/videoGenerator";
 import {
 	getChatById,
 	saveChat,
@@ -466,30 +465,11 @@ export async function POST(request: Request) {
 					throw new Error("Failed to generate song");
 				}
 
-				const assetId = createId();
-				await saveGeneratedAssets({
-					asset: {
-						id: assetId,
-						type: "birthdaySong",
-						data: {
-							id: assetId,
-							type: "birthdaySong",
-							songUrl: urlResult?.signedUrl,
-							lyrics: lyrics,
-						},
-						profileId: user.id,
-						chatId: id,
-						createdAt: new Date(),
-						updatedAt: new Date(),
-						title: chat?.title ?? "",
-					},
-				});
-
 				return {
 					type: "birthdaySong",
 					songUrl: urlResult?.signedUrl,
 					lyrics: lyrics,
-					id: assetId,
+					id: createId(),
 				} satisfies GeneratedAssetsDataSchema;
 			} catch (error) {
 				throw new Error("Sorry, I encountered an error.");
@@ -509,18 +489,51 @@ export async function POST(request: Request) {
 					style,
 				});
 
-				const videoUrl = await createVideoFromImagesAndAudio(
-					transformedImages,
-					songUrl,
+				const response = await fetch(
+					"https://video-creator-service.onrender.com/create-video",
+					{
+						method: "POST",
+						headers: {
+							"Content-Type": "application/json",
+						},
+						body: JSON.stringify({
+							imageUrls: transformedImages,
+							audioUrl: songUrl,
+						}),
+					},
 				);
+
+				const responseData = await response.json();
+				const videoUrl = responseData.videoUrl as string;
+				const assetId = createId();
+
+				await saveGeneratedAssets({
+					asset: {
+						id: assetId,
+						type: "birthdayVideo",
+						data: {
+							id: assetId,
+							type: "birthdayVideo",
+							songUrl: songUrl,
+							videoUrl: videoUrl,
+							imagesUrl: transformedImages,
+							lyrics: lyrics,
+						},
+						profileId: user.id,
+						chatId: id,
+						createdAt: new Date(),
+						updatedAt: new Date(),
+						title: chat?.title ?? "",
+					},
+				});
 
 				return {
 					type: "birthdayVideo",
 					videoUrl: videoUrl,
 					imagesUrl: transformedImages,
-					songUrl: songUrl,
 					lyrics: lyrics,
-					id: createId(),
+					id: assetId,
+					songUrl: songUrl,
 				} satisfies GeneratedAssetsDataSchema;
 			} catch (error) {
 				console.error("Error generating video:", error);

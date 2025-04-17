@@ -243,9 +243,6 @@ const VideoPlayer = ({
 		lyrics: string;
 	};
 }) => {
-	const isMP4Video =
-		videoData.videoUrl.startsWith("data:video/mp4") ||
-		videoData.videoUrl.startsWith("data:video/mp4;base64");
 	const isVideoSameAsSong = videoData.videoUrl === videoData.songUrl;
 	const [hasError, setHasError] = useState(false);
 	const [isRetrying, setIsRetrying] = useState(false);
@@ -296,7 +293,7 @@ const VideoPlayer = ({
 				</div>
 			</div>
 
-			{isMP4Video && !isVideoSameAsSong && (
+			{!isVideoSameAsSong && (
 				<a
 					href={videoData.videoUrl}
 					download="Birthday video.mp4"
