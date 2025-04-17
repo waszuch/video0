@@ -14,6 +14,7 @@ import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
 import { getServerUser } from "@/components/AuthProvider/getServerUser";
 import { env } from "@/env";
+import type { GeneratedAssetsData } from "@/server/schemas/generatedAssetsSchema";
 import { db } from "@/server/db";
 import { generationTokens, generationTransactions } from "@/server/db/schema";
 import type { GeneratedAssetsDataSchema } from "@/server/schemas/generatedAssetsSchema";
@@ -25,6 +26,7 @@ import {
 	saveMessages,
 } from "./chatQueries";
 import { getMostRecentUserMessage, getTrailingMessageId } from "./utilts";
+import { createVideoFromImagesAndAudio } from "@/server/utils/videoGenerator";
 
 const replicate = new Replicate({
 	auth: env.REPLICATE_API_TOKEN || "",
@@ -78,14 +80,15 @@ CRITICALLY IMPORTANT: Don't just tell the user you're generating the audio or re
 
 When speaking to the user, DO NOT mention functions, tools, or any technical implementation details. Simply tell them you're creating the birthday song for them based on the information they provided.
 
-IMPORTANT: When the song is generated, do not display the direct URL to the user. Instead, return the song data in a structured format that will be rendered by the client application. The client will handle displaying the audio player and download options.`;
+After the song is generated, ask the user if they would like to create a music video for the song. If they say yes, ask them to provide physical details about the birthday person (such as age, gender, appearance, etc.). Then call the 'generateVideoFromMusic' tool with these details, the lyrics, and the song URL.
+
+IMPORTANT: When the song or video is generated, do not display the direct URL to the user or JSON.`;
 
 const openRouter = createOpenRouter({
 	apiKey: env.OPENROUTER_API_KEY,
 });
 const model = openRouter("");
 
-// Define the song styles enum based on the songs map
 const SongStyle = z.enum([
 	"Blues",
 	"Country",
@@ -99,7 +102,6 @@ const SongStyle = z.enum([
 	"Rock",
 ]);
 
-// Type for our songs map
 const songs = {
 	Blues: {
 		voice: [
@@ -411,13 +413,13 @@ export async function POST(request: Request) {
 			provider?: string;
 		}) => {
 			try {
-				// Get the selected style from the songs map
 				const selectedStyle = songs[style];
 				const randomIndex = Math.floor(
 					Math.random() * selectedStyle.voice.length,
 				);
 				const selectedVoice = selectedStyle.voice[randomIndex];
 				const selectedInstrumental = selectedStyle.instrumental[randomIndex];
+				
 				if (!selectedStyle) {
 					throw new Error(`Style ${style} for provider ${provider} not found`);
 				}
@@ -439,16 +441,21 @@ export async function POST(request: Request) {
 				const blob = await output.blob(); // get the real binary blob, per replicate docs
 				const buffer = await blob.arrayBuffer();
 				const uint8Array = new Uint8Array(buffer);
+				
 				const { error } = await supabase()
 					.storage.from("songs")
 					.upload(fileName, uint8Array);
+					
 				if (error) throw error;
+				
 				const { data: urlResult } = await supabase()
 					.storage.from("songs")
 					.createSignedUrl(fileName, 60 * 60 * 24 * 365 * 99999);
+					
 				if (!urlResult?.signedUrl) {
 					throw new Error("Failed to generate song");
 				}
+
 				const assetId = createId();
 				await saveGeneratedAssets({
 					asset: {
@@ -476,6 +483,115 @@ export async function POST(request: Request) {
 				} satisfies GeneratedAssetsDataSchema;
 			} catch (error) {
 				return "Sorry, I encountered an error.";
+			}
+		};
+
+		const generateVideoFromMusic = async ({
+			lyrics,
+			songUrl,
+			personDescription,
+		}: {
+			lyrics: string;
+			songUrl: string;
+			personDescription: string;
+		}) => {
+			try {
+				const verses = lyrics.split(/\n\s*\n/).filter(verse => verse.trim().length > 0);
+				const versesToProcess = verses.slice(0, Math.min(4, verses.length));
+				
+				// Generate expert prompts for image generation
+				const expertPromptPromises = versesToProcess.map((verse, index) => {
+					return generateText({
+						model: openRouter(""),
+						system: `You are an expert image prompt engineer. Create a detailed, vivid image generation prompt based on the verse from a birthday song and description of the person.
+The prompt should:
+- Include visual details that capture the emotion and meaning of the verse
+- Incorporate the physical description of the birthday person
+- Add appropriate festive elements like cake, balloons, celebrations
+- Include technical specifications for high-quality image (lighting, style, composition)
+- Be optimized for AI image generation
+- Be between 100-200 words in length`,
+						prompt: `Verse: ${verse}\nPerson description: ${personDescription}`,
+					}).then(({ text: expertPrompt }) => {
+						return { index, expertPrompt };
+					}).catch(() => {
+						return { index, expertPrompt: null };
+					});
+				});
+				
+				const expertPromptResults = await Promise.all(expertPromptPromises);
+				const validPrompts = expertPromptResults.filter(result => result.expertPrompt !== null);
+				
+				// Generate images using the prompts
+				const imagePromises = validPrompts.map(async ({ expertPrompt }) => {
+					try {
+						const output = await replicate.run(
+							"recraft-ai/recraft-v3", 
+							{
+								input: {
+									size: "1365x1024",
+									prompt: expertPrompt
+								}
+							}
+						);
+						
+						if (!Array.isArray(output) && output && typeof output === 'object') {
+							const fileOutput = output as unknown as { url?: string | (() => Promise<string> | string) };
+							
+							if (typeof fileOutput.url === 'function') {
+								const imageUrlResult = await fileOutput.url();
+								
+								if (typeof imageUrlResult === 'string') {
+									return imageUrlResult;
+								} else if (typeof imageUrlResult === 'object' && imageUrlResult !== null) {
+									const potentialUrl = (imageUrlResult as any).url || (imageUrlResult as any).href || (imageUrlResult as any).uri;
+									if (typeof potentialUrl === 'string') {
+										return potentialUrl;
+									}
+								}
+							} else if (typeof fileOutput.url === 'string') {
+								return fileOutput.url;
+							}
+						}
+						return null;
+					} catch {
+						return null;
+					}
+				});
+				
+				const imageUrlResults = await Promise.all(imagePromises);
+				const validImageUrls = imageUrlResults.filter(url => url !== null) as string[];
+				
+				// Generate video or fall back to audio
+				let videoUrl = songUrl;
+				
+				if (validImageUrls.length > 0) {
+					try {
+						const stringImageUrls = validImageUrls
+							.map(url => {
+								if (typeof url === 'string') return url;
+								if (url && typeof url === 'object' && (url as any).href) return (url as any).href;
+								if (url && typeof url === 'object' && typeof (url as any).toString === 'function') return (url as any).toString();
+								return String(url);
+							})
+							.filter(url => typeof url === 'string' && url.length > 0);
+
+						videoUrl = await createVideoFromImagesAndAudio(stringImageUrls, songUrl);
+					} catch {
+						videoUrl = songUrl;
+					}
+				}
+				
+				return {
+					type: "birthdayVideo",
+					videoUrl: videoUrl,
+					imagesUrl: [],
+					songUrl: songUrl,
+					lyrics: lyrics,
+				} satisfies GeneratedAssetsData;
+			} catch (error) {
+				console.error("Error generating video:", error);
+				throw error;
 			}
 		};
 
@@ -525,6 +641,22 @@ export async function POST(request: Request) {
 									return generateMusicFromLyrics(params);
 								}),
 						},
+						generateVideoFromMusic: {
+							description:
+								"Generates a music video from lyrics, song URL, and description of the person.",
+							parameters: z.object({
+								lyrics: z
+									.string()
+									.describe("The full lyrics of the birthday song."),
+								songUrl: z
+									.string()
+									.describe("The URL of the generated song audio."),
+								personDescription: z
+									.string()
+									.describe("Physical description of the birthday person (age, gender, appearance, etc.)."),
+							}),
+							execute: (params) => generateVideoFromMusic(params),
+						},
 					},
 					onFinish: async ({ response }) => {
 						if (user.id) {
@@ -565,7 +697,6 @@ export async function POST(request: Request) {
 				});
 
 				result.consumeStream();
-
 				result.mergeIntoDataStream(dataStream);
 			},
 

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { api } from "@/trpc/react";
 import { useUser } from "./AuthProvider/AuthProvider";
 import { ChatMessages } from "./ChatMessages";
+import { MouseEventGlow } from "@/components/MouseEventGlow";
 
 export function Chat({
 	id,
@@ -62,9 +63,10 @@ export function Chat({
 
 	return (
 		<AnimatePresence>
-			<div className="flex flex-col min-w-0 h-dvh bg-background relative">
+			<div className="flex flex-col min-w-0 h-dvh bg-black text-white font-archivo relative overflow-x-hidden">
+				<MouseEventGlow />
 				<motion.div
-					className="absolute  top-2 right-2 z-10  bg-background px-4 py-1 rounded-full border-border border-2 flex items-center gap-2 text-xs font-semibold"
+					className="absolute top-2 right-2 z-10 bg-background px-4 py-1 rounded-full border-border border-2 flex items-center gap-2 text-xs font-semibold"
 					initial={{ opacity: 0, y: 10 }}
 					animate={{ opacity: 1, y: 0 }}
 					exit={{ opacity: 0, y: 10 }}
@@ -75,71 +77,50 @@ export function Chat({
 						{availableTokens}
 					</span>
 				</motion.div>
-				<ChatMessages status={status} messages={messages} />
-				{typeof availableTokens === "number" && availableTokens > 0 ? (
-					<motion.form
-						className="sticky bottom-0 left-0 right-0 flex items-center gap-2 border-t bg-background p-4"
-						initial={{ opacity: 0, y: 10 }}
-						animate={{ opacity: 1, y: 0 }}
-						exit={{ opacity: 0, y: 10 }}
-						transition={{ duration: 0.3 }}
-					>
-						<Input
-							placeholder="Type your message..."
-							className="flex-1"
-							value={input}
-							onChange={(e) => setInput(e.target.value)}
-							onKeyDown={(event) => {
-								if (
-									event.key === "Enter" &&
-									!event.shiftKey &&
-									!event.nativeEvent.isComposing
-								) {
-									event.preventDefault();
-
-									if (status !== "ready") {
-										toast.error(
-											"Please wait for the model to finish its response!",
-										);
-									} else {
-										submitInput();
-									}
+				<div className="relative z-10 flex-1 overflow-hidden">
+					<ChatMessages status={status} messages={messages} />
+				</div>
+				<form 
+					className="sticky bottom-0 left-0 right-0 flex items-center gap-2 border-t border-purple-700/30 bg-black p-3 md:p-4 z-10"
+					onSubmit={(e) => {
+						e.preventDefault();
+						if (status !== "ready") {
+							toast.error("Please wait for the model to finish its response!");
+						} else {
+							submitInput();
+						}
+					}}
+				>
+					<Input
+						placeholder="Type your message..."
+						className="flex-1 bg-black/80 border-purple-700/30 text-white placeholder:text-gray-400 focus-visible:ring-purple-500 h-12 md:h-auto"
+						value={input}
+						onChange={(e) => setInput(e.target.value)}
+						onKeyDown={(event) => {
+							if (
+								event.key === "Enter" &&
+								!event.shiftKey &&
+								!event.nativeEvent.isComposing
+							) {
+								event.preventDefault();
+								if (status !== "ready") {
+									toast.error("Please wait for the model to finish its response!");
+								} else {
+									submitInput();
 								}
-							}}
-						/>
-						<Button type="submit" size="icon" disabled={!input.trim()}>
-							<SendHorizontalIcon className="h-4 w-4" />
-							<span className="sr-only">Send</span>
-						</Button>
-					</motion.form>
-				) : (
-					<motion.div className="sticky bottom-0 left-0 right-0 flex justify-center items-center gap-2 border-t bg-background p-4 w-full">
-						<motion.div
-							initial={{ y: 0 }}
-							animate={{ y: 3 }}
-							exit={{ y: 0 }}
-							transition={{
-								duration: 1.5,
-								type: "spring",
-								bounce: 0.5,
-								repeat: Number.POSITIVE_INFINITY,
-							}}
-						>
-							<Button
-								onClick={() => {
-									checkout({ chatId: id }).then((checkout) => {
-										PolarEmbedCheckout.create(checkout.url, "dark");
-									});
-								}}
-								disabled={isCheckoutPending}
-							>
-								{isCheckoutPending
-									? "Loading..."
-									: "You ran out of tokens! Buy more tokens 🚀"}
-							</Button>
-						</motion.div>
-					</motion.div>
-				)}
+							}
+						}}
+					/>
+					<Button 
+						type="submit" 
+						size="icon" 
+						disabled={!input.trim()}
+						className="bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white h-12 w-12 md:h-10 md:w-10"
+					>
+						<SendHorizontalIcon className="h-5 w-5 md:h-4 md:w-4" />
+						<span className="sr-only">Send</span>
+					</Button>
+				</form>
 			</div>
 		</AnimatePresence>
 	);

@@ -17,7 +17,8 @@ function PureMessages({ status, messages }: MessagesProps) {
 	return (
 		<div
 			ref={messagesContainerRef}
-			className="flex flex-col min-w-0 gap-6 flex-1 overflow-y-scroll pt-4"
+			className="flex flex-col min-w-0 gap-4 md:gap-6 flex-1 overflow-y-auto overflow-x-hidden pt-4 px-3 md:px-8 text-white w-full"
+			style={{ overflowX: 'hidden', maxWidth: '100%', width: '100%' }}
 		>
 			{messages.length === 0 && <Greeting />}
 
@@ -47,29 +48,53 @@ export const ChatMessages = memo(PureMessages, (prevProps, nextProps) => {
 });
 
 const Greeting = () => {
+	const firstLine = "Let's create a unique birthday video song!";
+	const secondLine = "Just tell me the name of the person celebrating.";
+	
+	const firstLineCompletionTime = 0.5 + firstLine.length * 0.03;
+	const pauseBetweenLines = 0.8; 
+	const secondLineStartTime = firstLineCompletionTime + pauseBetweenLines;
+
 	return (
 		<div
 			key="overview"
-			className="max-w-3xl mx-auto md:mt-20 px-8 size-full flex flex-col justify-center"
+			className="max-w-2xl mx-auto md:mt-20 mt-8 px-4 md:px-8 flex flex-col justify-center"
 		>
-			<motion.div
-				initial={{ opacity: 0, y: 10 }}
-				animate={{ opacity: 1, y: 0 }}
-				exit={{ opacity: 0, y: 10 }}
-				transition={{ delay: 0.5 }}
-				className="text-2xl font-semibold"
-			>
-				I will help you generate a birthday video song.
-			</motion.div>
-			<motion.div
-				initial={{ opacity: 0, y: 10 }}
-				animate={{ opacity: 1, y: 0 }}
-				exit={{ opacity: 0, y: 10 }}
-				transition={{ delay: 0.6 }}
-				className="text-2xl text-zinc-500"
-			>
-				Please start by typing the name of the person having a birthday.
-			</motion.div>
+			<div className="text-xl md:text-3xl font-semibold leading-relaxed overflow-hidden bg-gradient-to-br from-white via-gray-300  bg-clip-text">
+				{firstLine.split("").map((char, index) => (
+					<motion.span
+						key={`first-${index}`}
+						initial={{ opacity: 0, y: 5 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{
+							duration: 0.2,
+							delay: 0.5 + index * 0.03,
+							ease: [0.34, 1.56, 0.64, 1],
+						}}
+						style={{ display: 'inline-block', lineHeight: 1.5 }}
+						className=""
+					>
+						{char === " " ? "\u00A0" : char}
+					</motion.span>
+				))}
+			</div>
+			<div className="text-lg md:text-2xl text-zinc-500 mt-4 md:mt-6 leading-relaxed overflow-hidden">
+				{secondLine.split("").map((char, index) => (
+					<motion.span
+						key={`second-${index}`}
+						initial={{ opacity: 0, y: 5 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{
+							duration: 0.2,
+							delay: secondLineStartTime + index * 0.03,
+							ease: [0.34, 1.56, 0.64, 1],
+						}}
+						style={{ display: 'inline-block', lineHeight: 1.5 }}
+					>
+						{char === " " ? "\u00A0" : char}
+					</motion.span>
+				))}
+			</div>
 		</div>
 	);
 };

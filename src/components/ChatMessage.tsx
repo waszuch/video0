@@ -9,43 +9,63 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { generatedAssetsDataSchema } from "@/server/schemas/generatedAssetsSchema";
 import { Markdown } from "./markdown";
+import Image from "next/image";
+import { useState, useRef, useEffect } from "react";
 
 const PurePreviewMessage = ({ message }: { message: UIMessage }) => {
 	return (
 		<AnimatePresence>
 			<motion.div
 				data-testid={`message-${message.role}`}
-				className="w-full mx-auto max-w-3xl px-4 group/message"
+				className="w-full mx-auto max-w-2xl px-2 md:px-4 group/message overflow-hidden"
 				initial={{ y: 5, opacity: 0 }}
 				animate={{ y: 0, opacity: 1 }}
 				data-role={message.role}
 			>
 				<div
 					className={cn(
-						"flex gap-4 w-full group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl",
+						"flex gap-3 md:gap-4 w-full",
+						message.role === "user" ? "justify-end" : ""
 					)}
 				>
 					{message.role === "assistant" && (
-						<div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border bg-background">
-							<div className="translate-y-px">
-								<SparklesIcon size={14} />
-							</div>
+						<div className="size-8 flex items-center rounded-full justify-center shrink-0 bg-transparent">
+							<Image 
+								src="/icon.svg" 
+								alt="AI Assistant" 
+								width={28} 
+								height={28} 
+								className="w-7 h-7"
+							/>
 						</div>
 					)}
 
-					<div className="flex flex-col gap-4 w-full">
+					<div className={cn(
+						"flex flex-col gap-3 md:gap-4 overflow-hidden",
+						message.role === "assistant" ? "w-[85%] md:w-[85%]" : "w-[85%] md:w-[75%]"
+					)}>
 						{message.parts?.map((part, index) => {
 							const { type } = part;
 							const key = `message-${message.id}-part-${index}`;
 
 							if (type === "text") {
+								if (part.text && (
+									part.text.includes('"type":"birthdayVideo"') ||
+									part.text.includes('"imagesUrl"') ||
+									(part.text.includes('"videoUrl"') && part.text.includes('"songUrl"') && part.text.includes('"lyrics"'))
+								)) {
+									return null;
+								}
+								
 								return (
-									<div key={key} className="flex flex-row gap-2 items-start">
+									<div key={key} className={cn(
+										"flex flex-row gap-2 items-start",
+										message.role === "user" ? "justify-end" : ""
+									)}>
 										<div
 											data-testid="message-content"
-											className={cn("flex flex-col gap-4", {
-												"bg-primary text-primary-foreground px-3 py-2 rounded-xl":
-													message.role === "user",
+											className={cn("flex flex-col gap-3 md:gap-4 overflow-hidden text-sm md:text-base", {
+												"bg-primary text-primary-foreground px-3 py-2 rounded-xl": message.role === "user",
 											})}
 										>
 											<Markdown>{part.text}</Markdown>
@@ -59,20 +79,13 @@ const PurePreviewMessage = ({ message }: { message: UIMessage }) => {
 								const { toolName, toolCallId, state } = toolInvocation;
 
 								if (state === "call") {
-									return (
-										<div
-											key={toolCallId}
-											className={cn({
-												skeleton: ["generateMusicFromLyrics"].includes(
-													toolName,
-												),
-											})}
-										>
-											{toolName === "generateMusicFromLyrics" ? (
-												<SongGeneratingIndicator />
-											) : null}
-										</div>
-									);
+									if (toolName === "generateMusicFromLyrics") {
+										return <SongGeneratingIndicator key={toolCallId} />;
+									} 
+									if (toolName === "generateVideoFromMusic") {
+										return <VideoGeneratingIndicator key={toolCallId} />;
+									}
+									return null;
 								}
 
 								if (state === "result") {
@@ -80,6 +93,7 @@ const PurePreviewMessage = ({ message }: { message: UIMessage }) => {
 									const parsedResult = generatedAssetsDataSchema.parse(result);
 
 									if (parsedResult.type === "birthdaySong") {
+
 										return (
 											<div key={toolCallId}>
 												<SongPlayer
@@ -90,12 +104,11 @@ const PurePreviewMessage = ({ message }: { message: UIMessage }) => {
 										);
 									}
 									if (parsedResult.type === "birthdayVideo") {
-										return (
-											<div key={toolCallId}>birthday video display @todo</div>
-										);
+										return <VideoPlayer key={toolCallId} videoData={parsedResult} />;
 									}
 								}
 							}
+							return null;
 						})}
 					</div>
 				</div>
@@ -107,37 +120,37 @@ const PurePreviewMessage = ({ message }: { message: UIMessage }) => {
 export const PreviewMessage = memo(
 	PurePreviewMessage,
 	(prevProps, nextProps) => {
-		if (prevProps.message.id !== nextProps.message.id) return false;
-		if (!equal(prevProps.message.parts, nextProps.message.parts)) return false;
-
-		return true;
+		return prevProps.message.id === nextProps.message.id && 
+		       equal(prevProps.message.parts, nextProps.message.parts);
 	},
 );
 
 export const ThinkingMessage = () => {
-	const role = "assistant";
-
 	return (
 		<motion.div
-			className="w-full mx-auto max-w-3xl px-4 group/message "
+			className="w-full mx-auto max-w-2xl px-2 md:px-4 group/message"
 			initial={{ y: 5, opacity: 0 }}
 			animate={{ y: 0, opacity: 1, transition: { delay: 1 } }}
-			data-role={role}
+			data-role="assistant"
 		>
-			<div
-				className={cn(
-					"flex gap-4 group-data-[role=user]/message:px-3 w-full group-data-[role=user]/message:w-fit group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl group-data-[role=user]/message:py-2 rounded-xl",
-					{
-						"group-data-[role=user]/message:bg-muted": true,
-					},
-				)}
-			>
-				<div className="size-8 flex items-center rounded-full justify-center ring-1 shrink-0 ring-border">
-					<SparklesIcon size={14} />
+			<div className={cn(
+				"flex gap-3 md:gap-4 group-data-[role=user]/message:px-3 w-full group-data-[role=user]/message:w-fit group-data-[role=user]/message:ml-auto group-data-[role=user]/message:max-w-2xl group-data-[role=user]/message:py-2 rounded-xl",
+				{
+					"group-data-[role=user]/message:bg-muted": true,
+				},
+			)}>
+				<div className="size-7 md:size-8 flex items-center rounded-full justify-center shrink-0 bg-transparent">
+					<Image 
+						src="/icon.svg" 
+						alt="AI Assistant" 
+						width={28} 
+						height={28} 
+						className="w-7 h-7"
+					/>
 				</div>
 
-				<div className="flex flex-col gap-2 w-full">
-					<div className="flex flex-col gap-4 text-muted-foreground">
+				<div className="flex flex-col gap-2 w-[85%]">
+					<div className="flex flex-col gap-3 md:gap-4 text-muted-foreground text-sm md:text-base">
 						Hmm...
 					</div>
 				</div>
@@ -163,7 +176,7 @@ const SongPlayer = ({
 			</audio>
 			<a
 				href={songUrl}
-				download={"Birthday song"}
+				download="Birthday song"
 				className="inline-flex items-center px-3 py-1 bg-primary text-primary-foreground rounded-md text-sm"
 			>
 				Download Song
@@ -184,15 +197,90 @@ const SongPlayer = ({
 	);
 };
 
-const SongGeneratingIndicator = () => {
+const SongGeneratingIndicator = () => (
+	<div className="mt-2 p-3 bg-muted/50 rounded-md animate-pulse">
+		<div className="flex items-center space-x-2">
+			<div className="w-4 h-4 rounded-full bg-primary/70" />
+			<div className="text-sm">
+				Generating your birthday song... This may take a moment
+			</div>
+		</div>
+	</div>
+);
+
+const VideoGeneratingIndicator = () => (
+	<div className="mt-2 p-3 bg-muted/50 rounded-md animate-pulse">
+		<div className="flex items-center space-x-2">
+			<div className="w-4 h-4 rounded-full bg-primary/70" />
+			<div className="text-sm">
+				Creating your music video... This may take a few moments
+			</div>
+		</div>
+	</div>
+);
+
+const VideoPlayer = ({ videoData }: { videoData: { videoUrl: string, imagesUrl: string[], songUrl: string, lyrics: string } }) => {
+	const isMP4Video = videoData.videoUrl.startsWith('data:video/mp4') || 
+	                  videoData.videoUrl.startsWith('data:video/mp4;base64');
+	const isVideoSameAsSong = videoData.videoUrl === videoData.songUrl;
+	const [hasError, setHasError] = useState(false);
+	const [isRetrying, setIsRetrying] = useState(false);
+	const videoRef = useRef<HTMLVideoElement>(null);
+	
+	const retryPlayback = () => {
+		if (videoRef.current && hasError && !isRetrying) {
+			setIsRetrying(true);
+			const currentSrc = videoRef.current.src;
+			videoRef.current.src = "";
+			
+			setTimeout(() => {
+				if (videoRef.current) {
+					videoRef.current.src = currentSrc;
+					videoRef.current.load();
+					videoRef.current.play().catch(() => {});
+					setIsRetrying(false);
+					setHasError(false);
+				}
+			}, 100);
+		}
+	};
+	
+	useEffect(() => {
+		if (hasError) {
+			retryPlayback();
+		}
+	}, [hasError]);
+	
 	return (
-		<div className="mt-2 p-3 bg-muted/50 rounded-md animate-pulse">
-			<div className="flex items-center space-x-2">
-				<div className="w-4 h-4 rounded-full bg-primary/70" />
-				<div className="text-sm">
-					Generating your birthday song... This may take a moment
+		<div className="mt-2 p-2 md:p-3 bg-muted/50 rounded-md overflow-hidden w-full">
+			<div className="mb-2 md:mb-4 overflow-hidden">
+				<video 
+					ref={videoRef}
+					controls
+					autoPlay={false}
+					preload="metadata"
+					className="w-full rounded-md max-w-full" 
+					style={{ maxHeight: "300px", objectFit: "contain" }}
+					playsInline
+					onError={() => setHasError(true)}
+				>
+					<source src={videoData.videoUrl} type="video/mp4" />
+					Your browser does not support the video tag.
+				</video>
+				<div className="text-xs text-muted-foreground mt-1">
+					If video doesn't play, try downloading it using the button below.
 				</div>
 			</div>
+		
+			{isMP4Video && !isVideoSameAsSong && (
+				<a
+					href={videoData.videoUrl}
+					download="Birthday video.mp4"
+					className="inline-flex items-center px-3 py-2 md:py-1 bg-primary text-primary-foreground rounded-md text-sm ml-2"
+				>
+					Download Video
+				</a>
+			)}
 		</div>
 	);
 };
