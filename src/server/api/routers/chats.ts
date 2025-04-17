@@ -30,7 +30,7 @@ export const chatsRouter = createTRPCRouter({
 				},
 			});
 
-			return foundChat;
+			return foundChat ?? null;
 		}),
 	getChatGeneratedAssetsByChatId: privateProcedure
 		.input(
