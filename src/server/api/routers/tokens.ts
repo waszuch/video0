@@ -61,7 +61,7 @@ export const tokensRouter = createTRPCRouter({
 				await db
 					.insert(generationTokens)
 					.values({
-						id: crypto.randomUUID(),
+						id: uuidv4(),
 						profileId: user.id,
 						availableTokens: FREE_INITIAL_TOKEN_AMOUNT,
 						initialTokenAmount: FREE_INITIAL_TOKEN_AMOUNT,
