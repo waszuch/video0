@@ -172,123 +172,126 @@ export function GeneratedAssets({
 	generatedAssets: RouterOutputs["chats"]["getChatGeneratedAssetsByChatId"];
 }) {
 	return (
-		<AnimatePresence>
-			<ScrollArea className="flex-1 h-full">
-				<div className="flex flex-col gap-4 p-4">
-					<div className="flex flex-col gap-1 items-center mt-10">
-						<motion.h1
-							className="text-3xl font-bold text-white"
-							initial={{ opacity: 0, y: 10 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{
-								duration: 0.5,
-								ease: "easeOut",
-							}}
-						>
-							Congrats! Here&apos;s your video ❤️
-						</motion.h1>
-						<motion.span
-							className="text-gray-400"
-							initial={{ opacity: 0, y: 10 }}
-							animate={{ opacity: 1, y: 0 }}
-							transition={{
-								duration: 0.5,
-								ease: "easeOut",
-								delay: 0.5,
-							}}
-						>
-							You can download it below and share it with your friends and
-							family.
-						</motion.span>
-					</div>
-					<motion.div
-						initial={{ opacity: 0, y: 10 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{
-							duration: 0.5,
-							ease: "easeOut",
-							delay: 1,
-						}}
-						className="flex gap-4 z-50 w-full flex-wrap justify-center p-4"
-					>
-						{generatedAssets.map((asset) => (
-							<Card
-								key={asset.id}
-								className="max-w-[500px] w-full bg-gradient-to-br from-purple-600/10 to-pink-600/10 hover:from-purple-700/10 hover:to-pink-700/10 border-purple-700/30"
+		<div className="relative z-10 flex-1 overflow-hidden h-screen">
+			<AnimatePresence>
+				<ScrollArea className="h-full">
+					<div className="flex flex-col gap-4 p-4">
+						<div className="flex flex-col gap-1 items-center mt-10">
+							<motion.h1
+								className="text-3xl font-bold text-white"
+								initial={{ opacity: 0, y: 10 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={{
+									duration: 0.5,
+									ease: "easeOut",
+								}}
 							>
-								<CardContent>
-									{asset.type === "birthdaySong" && (
-										<audio
-											src={asset.data.songUrl}
-											className="w-full max-w-[500px]"
-										>
-											<track kind="captions" />
-										</audio>
-									)}
-									{asset.type === "birthdayVideo" &&
-										"videoUrl" in asset.data && (
-											<div className="flex justify-center flex-col gap-2">
-												<video
-													src={asset.data.videoUrl}
-													controls
-													className="max-w-[500px] w-full rounded-lg"
-												>
-													<track kind="captions" />
-													Your browser does not support the video element.
-												</video>
-												<div className="flex gap-2 justify-end">
-													<Button
-														className="text-sm text-gray-400 cursor-pointer"
-														onClick={() => {
-															const url = new URL(
-																`/happy-birthday/${asset.id}`,
-																window.location.origin,
-															);
-															navigator.clipboard.writeText(url.toString());
-															toast.success("Link copied to clipboard");
-														}}
-													>
-														<CopyIcon className="w-4 h-4" />
-														Copy link
-													</Button>
-													<Button
-														className="text-sm text-gray-400 cursor-pointer"
-														onClick={() => {
-															if ("videoUrl" in asset.data) {
-																const videoUrl = asset.data.videoUrl;
-																const downloadVideo = async () => {
-																	try {
-																		const response = await fetch(videoUrl);
-																		const blob = await response.blob();
-																		const url =
-																			window.URL.createObjectURL(blob);
-																		const a = document.createElement("a");
-																		a.href = url;
-																		a.download = `birthday-video-${asset.id}.mp4`;
-																		document.body.appendChild(a);
-																		a.click();
-																		window.URL.revokeObjectURL(url);
-																		document.body.removeChild(a);
-																	} catch (error) {
-																		toast.error("Failed to download video");
-																	}
-																};
-																downloadVideo();
-															}
-														}}
-													>
-														<DownloadIcon className="w-4 h-4" />
-														Download video
-													</Button>
-												</div>
-											</div>
+								Congrats! Here&apos;s your video ❤️
+							</motion.h1>
+							<motion.span
+								className="text-gray-400"
+								initial={{ opacity: 0, y: 10 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={{
+									duration: 0.5,
+									ease: "easeOut",
+									delay: 0.5,
+								}}
+							>
+								You can download it below and share it with your friends and
+								family.
+							</motion.span>
+						</div>
+
+						<motion.div
+							initial={{ opacity: 0, y: 10 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{
+								duration: 0.5,
+								ease: "easeOut",
+								delay: 1,
+							}}
+							className="flex gap-4 z-50 w-full flex-wrap justify-center p-4"
+						>
+							{generatedAssets.map((asset) => (
+								<Card
+									key={asset.id}
+									className="max-w-[500px] w-full bg-gradient-to-br from-purple-600/10 to-pink-600/10 hover:from-purple-700/10 hover:to-pink-700/10 border-purple-700/30"
+								>
+									<CardContent>
+										{asset.type === "birthdaySong" && (
+											<audio
+												src={asset.data.songUrl}
+												className="w-full max-w-[500px]"
+											>
+												<track kind="captions" />
+											</audio>
 										)}
-								</CardContent>
-							</Card>
-						))}
-					</motion.div>
-				</div>
-			</ScrollArea>
-		</AnimatePresence>
+										{asset.type === "birthdayVideo" &&
+											"videoUrl" in asset.data && (
+												<div className="flex justify-center flex-col gap-2">
+													<video
+														src={asset.data.videoUrl}
+														controls
+														className="max-w-[500px] w-full rounded-lg"
+													>
+														<track kind="captions" />
+														Your browser does not support the video element.
+													</video>
+													<div className="flex gap-2 justify-end">
+														<Button
+															className="text-sm text-gray-400 cursor-pointer"
+															onClick={() => {
+																const url = new URL(
+																	`/happy-birthday/${asset.id}`,
+																	window.location.origin,
+																);
+																navigator.clipboard.writeText(url.toString());
+																toast.success("Link copied to clipboard");
+															}}
+														>
+															<CopyIcon className="w-4 h-4" />
+															Copy link
+														</Button>
+														<Button
+															className="text-sm text-gray-400 cursor-pointer"
+															onClick={() => {
+																if ("videoUrl" in asset.data) {
+																	const videoUrl = asset.data.videoUrl;
+																	const downloadVideo = async () => {
+																		try {
+																			const response = await fetch(videoUrl);
+																			const blob = await response.blob();
+																			const url =
+																				window.URL.createObjectURL(blob);
+																			const a = document.createElement("a");
+																			a.href = url;
+																			a.download = `birthday-video-${asset.id}.mp4`;
+																			document.body.appendChild(a);
+																			a.click();
+																			window.URL.revokeObjectURL(url);
+																			document.body.removeChild(a);
+																		} catch (error) {
+																			toast.error("Failed to download video");
+																		}
+																	};
+																	downloadVideo();
+																}
+															}}
+														>
+															<DownloadIcon className="w-4 h-4" />
+															Download video
+														</Button>
+													</div>
+												</div>
+											)}
+									</CardContent>
+								</Card>
+							))}
+						</motion.div>
+					</div>
+				</ScrollArea>
+			</AnimatePresence>
+		</div>
 	);
 }
