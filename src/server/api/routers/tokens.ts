@@ -34,6 +34,7 @@ export const tokensRouter = createTRPCRouter({
 						initialTokenAmount: FREE_INITIAL_TOKEN_AMOUNT,
 					})
 					.returning()
+					.onConflictDoNothing()
 			)?.[0];
 		}
 
@@ -67,6 +68,7 @@ export const tokensRouter = createTRPCRouter({
 						initialTokenAmount: FREE_INITIAL_TOKEN_AMOUNT,
 					})
 					.returning()
+					.onConflictDoNothing()
 			)?.[0];
 		}
 
