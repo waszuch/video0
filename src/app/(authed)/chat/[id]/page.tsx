@@ -19,6 +19,10 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
 		notFound();
 	}
 
+	const foundGeneratedAssets = await api.chats.getChatGeneratedAssetsByChatId({
+		chatId: id,
+	});
+
 	return (
 		<PrivatePage>
 			<div className="w-full min-h-screen bg-black">
@@ -27,6 +31,7 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
 					id={id}
 					initialMessages={convertToUIMessages(foundChat.messages)}
 					initialTransformedImages={foundChat.transformedImages}
+					initialGeneratedAssets={foundGeneratedAssets}
 				/>
 			</div>
 		</PrivatePage>

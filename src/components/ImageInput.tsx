@@ -264,7 +264,7 @@ export function ImageInput({
 									</div>
 									<div className="mt-3 flex items-start">
 										<div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse mr-2 mt-1" />
-										<p className="text-sm text-gray-400">
+										<p className="text-sm text-gray-400 text-left">
 											We're applying special effects to make your birthday video
 											look amazing
 										</p>

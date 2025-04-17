@@ -3,14 +3,14 @@
 import { useChat } from "@ai-sdk/react";
 import { PolarEmbedCheckout } from "@polar-sh/checkout/embed";
 import type { UIMessage } from "ai";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { SendHorizontalIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { MouseEventGlow } from "@/components/MouseEventGlow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { api } from "@/trpc/react";
+import { api, type RouterOutputs } from "@/trpc/react";
 import { useUser } from "./AuthProvider/AuthProvider";
 import { ChatMessages } from "./ChatMessages";
 import { ImageInput } from "./ImageInput";
@@ -21,10 +21,12 @@ export const Chat = ({
 	id,
 	initialMessages,
 	initialTransformedImages = [],
+	initialGeneratedAssets = [],
 }: {
 	id: string;
 	initialMessages: Array<UIMessage>;
 	initialTransformedImages: string[];
+	initialGeneratedAssets?: RouterOutputs["chats"]["getChatGeneratedAssetsByChatId"];
 }) => {
 	const [transformedImages, setTransformedImages] = useState<string[]>(
 		initialTransformedImages,
@@ -33,9 +35,8 @@ export const Chat = ({
 	const { data: generatedAssets } =
 		api.chats.getChatGeneratedAssetsByChatId.useQuery(
 			{ chatId: id },
-			{ enabled: !!id },
+			{ enabled: !!id, initialData: initialGeneratedAssets },
 		);
-	console.log({ generatedAssets });
 
 	const hasGeneratedAssets =
 		typeof generatedAssets !== "undefined" && generatedAssets.length > 0;
@@ -165,68 +166,97 @@ export function ChatContent({
 	);
 }
 
-interface GeneratedAsset {
-	id: string;
-	type: "birthdaySong" | "birthdayVideo";
-	data: {
-		songUrl: string;
-		lyrics: string;
-		videoUrl?: string;
-		imagesUrl?: string[];
-	};
-}
-
-interface GeneratedAssetsProps {
-	generatedAssets: GeneratedAsset[];
-}
-
-export function GeneratedAssets({ generatedAssets }: GeneratedAssetsProps) {
+export function GeneratedAssets({
+	generatedAssets,
+}: {
+	generatedAssets: RouterOutputs["chats"]["getChatGeneratedAssetsByChatId"];
+}) {
 	return (
-		<ScrollArea className="flex-1 h-full">
-			<div className="flex gap-4 z-50 w-full flex-wrap justify-center p-4">
-				{generatedAssets.map((asset) => (
-					<Card
-						key={asset.id}
-						className="max-w-[500px] w-full bg-gradient-to-br from-purple-600/10 to-pink-600/10 hover:from-purple-700/10 hover:to-pink-700/10 border-purple-700/30"
+		<AnimatePresence>
+			<ScrollArea className="flex-1 h-full">
+				<div className="flex flex-col gap-4 p-4">
+					<div className="flex flex-col gap-1 items-center mt-10">
+						<motion.h1
+							className="text-3xl font-bold text-white"
+							initial={{ opacity: 0, y: 10 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{
+								duration: 0.5,
+								ease: "easeOut",
+							}}
+						>
+							Congrats! Here&apos;s your video ❤️
+						</motion.h1>
+						<motion.span
+							className="text-gray-400"
+							initial={{ opacity: 0, y: 10 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{
+								duration: 0.5,
+								ease: "easeOut",
+								delay: 0.5,
+							}}
+						>
+							You can download it below and share it with your friends and
+							family.
+						</motion.span>
+					</div>
+					<motion.div
+						initial={{ opacity: 0, y: 10 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{
+							duration: 0.5,
+							ease: "easeOut",
+							delay: 1,
+						}}
+						className="flex gap-4 z-50 w-full flex-wrap justify-center p-4"
 					>
-						<CardContent>
-							{asset.type === "birthdaySong" && (
-								<audio
-									src={asset.data.songUrl}
-									className="w-full max-w-[500px]"
-								>
-									<track kind="captions" />
-								</audio>
-							)}
-							{asset.type === "birthdayVideo" && asset.data.videoUrl && (
-								<div className="flex justify-center flex-col gap-2">
-									<video
-										src={asset.data.videoUrl}
-										controls
-										className="max-w-[500px] w-full rounded-lg"
-									>
-										<track kind="captions" />
-										Your browser does not support the video element.
-									</video>
-									<Button
-										className="text-sm text-gray-400"
-										onClick={() => {
-											const url = new URL(
-												`/happy-birthday/${asset.id}`,
-												window.location.origin,
-											);
-											navigator.clipboard.writeText(url.toString());
-											toast.success("Link copied to clipboard");
-										}}
-									>
-										Copy link
-									</Button>
-								</div>
-							)}
-						</CardContent>
-					</Card>
-				))}
-			</div>
-		</ScrollArea>
+						{generatedAssets.map((asset) => (
+							<Card
+								key={asset.id}
+								className="max-w-[500px] w-full bg-gradient-to-br from-purple-600/10 to-pink-600/10 hover:from-purple-700/10 hover:to-pink-700/10 border-purple-700/30"
+							>
+								<CardContent>
+									{asset.type === "birthdaySong" && (
+										<audio
+											src={asset.data.songUrl}
+											className="w-full max-w-[500px]"
+										>
+											<track kind="captions" />
+										</audio>
+									)}
+									{asset.type === "birthdayVideo" &&
+										"videoUrl" in asset.data && (
+											<div className="flex justify-center flex-col gap-2">
+												<video
+													src={asset.data.videoUrl}
+													controls
+													className="max-w-[500px] w-full rounded-lg"
+												>
+													<track kind="captions" />
+													Your browser does not support the video element.
+												</video>
+												<Button
+													className="text-sm text-gray-400"
+													onClick={() => {
+														const url = new URL(
+															`/happy-birthday/${asset.id}`,
+															window.location.origin,
+														);
+														navigator.clipboard.writeText(url.toString());
+														toast.success("Link copied to clipboard");
+													}}
+												>
+													Copy link
+												</Button>
+											</div>
+										)}
+								</CardContent>
+							</Card>
+						))}
+					</motion.div>
+				</div>
+			</ScrollArea>
+		</AnimatePresence>
 	);
 }
