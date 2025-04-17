@@ -1,7 +1,9 @@
 import { TRPCError } from "@trpc/server";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { env } from "@/env";
 import { createTRPCRouter, privateProcedure } from "@/server/api/trpc";
+import { chats } from "@/server/db/schema";
 import { supabase } from "@/server/supabase/supabaseClient";
 
 export const imageGenRouter = createTRPCRouter({
@@ -102,6 +104,18 @@ export const imageGenRouter = createTRPCRouter({
 
 				// Wait for all generations to complete
 				const generationResults = await Promise.all(generationPromises);
+
+				const transformedImagesUrls = generationResults
+					.map((result) => result?.transformedImageUrl.signedUrl)
+					.filter(Boolean) as string[];
+
+				await ctx.db.insert(chats).values({
+					id: input.chatId,
+					transformedImages: transformedImagesUrls,
+					createdAt: new Date(),
+					title: "",
+					profileId: user.id,
+				});
 
 				return {
 					success: true,
