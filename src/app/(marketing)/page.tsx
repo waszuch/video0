@@ -12,6 +12,7 @@ interface NavButtonProps {
   children: ReactNode;
 }
 
+
 const NavButton = ({ href, filled = false, children }: NavButtonProps) => (
   <Link
     href={href}
@@ -76,7 +77,7 @@ export default async function Home() {
 
           <div className="flex-grow flex flex-col justify-center">
             <h1 className="text-7xl font-bold text-left mb-6 bg-gradient-to-br from-white via-gray-300 to-gray-500 text-transparent bg-clip-text">
-              AI Birthday Video Generator
+              AI Birthday Video Song Generator
             </h1>
             <p className="text-lg text-gray-300 mb-8">
               Create and share personalized birthday videos with your friends and family in seconds.

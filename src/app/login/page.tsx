@@ -33,7 +33,7 @@ const LeftPanel = () => (
 		</div>
 		
 		<div className="relative z-20 flex-grow flex items-center justify-center w-full">
-			<div className="w-full h-[400px] rounded-lg overflow-hidden shadow-2xl">
+			<div className="max-w-[300px] h-[534px] rounded-lg overflow-hidden shadow-2xl">
 				<VideoPlayer />
 			</div>
 		</div>

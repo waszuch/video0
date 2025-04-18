@@ -28,7 +28,7 @@ export function VideoPlayer() {
   const overlayStyles = "absolute pointer-events-none bg-black bg-opacity-60";
 
   return (
-    <div className="relative w-full h-full cursor-pointer" onClick={toggleMute}>
+    <div className="relative w-full h-full aspect-[9/16] cursor-pointer" onClick={toggleMute}>
       <video
         ref={videoRef}
         autoPlay
@@ -36,7 +36,7 @@ export function VideoPlayer() {
         muted
         playsInline
         className="w-full h-full object-cover rounded-lg"
-        src="/video.mp4"
+        src="https://fqnqeyjbhlesotcxsibt.supabase.co/storage/v1/object/sign/videos/e32651c4-32e7-43ee-a4a5-65ef310d7ac4.mp4?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InN0b3JhZ2UtdXJsLXNpZ25pbmcta2V5XzUwOWJjNzhhLThhYzQtNDJkNS1hNTg5LTA1YjUyY2ZhNDQwYyJ9.eyJ1cmwiOiJ2aWRlb3MvZTMyNjUxYzQtMzJlNy00M2VlLWE0YTUtNjVlZjMxMGQ3YWM0Lm1wNCIsImlhdCI6MTc0NDk0NTQ5OSwiZXhwIjozMTUzNzcxMzQwOTQ5OX0.v86BmQwqjI783WENX3DGDsesjpWcKEtVQWRmFXtfV7s"
       />
       
       <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-30 pointer-events-none" />

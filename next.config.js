@@ -6,6 +6,14 @@ import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
 const config = {
+	images: {
+		remotePatterns: [
+			{
+				protocol: 'https',
+				hostname: 'fqnqeyjbhlesotcxsibt.supabase.co',
+			},
+		],
+	},
 	typescript: {
 		ignoreBuildErrors: true,
 	},
