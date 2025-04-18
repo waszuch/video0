@@ -604,27 +604,25 @@ export async function POST(request: Request) {
 								),
 							}),
 							execute: async (params) => {
-								await db.transaction(async (tx) => {
-									const generationToken =
-										await tx.query.generationTokens.findFirst({
-											where: eq(generationTokens.profileId, user.id),
-										});
-
-									if (!generationToken) {
-										throw new Error("No generation token found!");
-									}
-									await tx
-										.update(generationTokens)
-										.set({
-											availableTokens: sql`${generationTokens.availableTokens} - 1`,
-										})
-										.where(eq(generationTokens.profileId, user.id));
-
-									await tx.insert(generationTransactions).values({
-										amount: 1,
-										generationTokenId: generationToken.id,
-										id: uuidv4(),
+								const generationToken =
+									await db.query.generationTokens.findFirst({
+										where: eq(generationTokens.profileId, user.id),
 									});
+
+								if (!generationToken) {
+									throw new Error("No generation token found!");
+								}
+								await db
+									.update(generationTokens)
+									.set({
+										availableTokens: sql`${generationTokens.availableTokens} - 1`,
+									})
+									.where(eq(generationTokens.profileId, user.id));
+
+								await db.insert(generationTransactions).values({
+									amount: 1,
+									generationTokenId: generationToken.id,
+									id: uuidv4(),
 								});
 								console.log("Generating video song");
 								return generateVideoSong(params);
