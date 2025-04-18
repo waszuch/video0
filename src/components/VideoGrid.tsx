@@ -2,7 +2,6 @@
 import Image from "next/image";
 import React, { useState, useRef, useEffect } from "react";
 
-// Video data structure
 const VIDEOS = [
   {
     id: "video1",
@@ -46,18 +45,19 @@ interface VideoItemProps {
   isHovered?: boolean;
 }
 
-// VideoItem component
-const VideoItem = ({ 
-  id, 
-  thumbnail, 
-  videoUrl, 
-  isVertical = true, 
-  isPlaying, 
+const VideoItem = ({
+  id,
+  thumbnail,
+  videoUrl,
+  isVertical = true,
+  isPlaying,
   togglePlay,
   isHovered
 }: VideoItemProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+
   useEffect(() => {
     if (videoRef.current) {
       if (isPlaying) {
@@ -68,15 +68,46 @@ const VideoItem = ({
     }
   }, [isPlaying]);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const updateTime = () => {
+      setCurrentTime(video.currentTime);
+      setDuration(video.duration);
+    };
+
+    video.addEventListener('timeupdate', updateTime);
+    video.addEventListener('loadedmetadata', updateTime);
+
+    return () => {
+      video.removeEventListener('timeupdate', updateTime);
+      video.removeEventListener('loadedmetadata', updateTime);
+    };
+  }, []);
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (videoRef.current) {
+      const newTime = parseFloat(e.target.value);
+      videoRef.current.currentTime = newTime;
+      setCurrentTime(newTime);
+    }
+  };
+
   const dimensionsClass = isVertical ? "aspect-[1/2]" : "aspect-[3/2]";
+
+  const formatTime = (timeInSeconds: number) => {
+    if (isNaN(timeInSeconds)) return "00:00";
+    const minutes = Math.floor(timeInSeconds / 60);
+    const seconds = Math.floor(timeInSeconds % 60);
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
 
   return (
     <div className={`w-full relative rounded-lg overflow-hidden ${dimensionsClass} group`}>
-      {/* Thumbnail with play button */}
       <div className={`absolute inset-0 transition-opacity duration-300 ${isPlaying ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-        {/* Darkening overlay that lightens on hover */}
         <div className="absolute inset-0 bg-black/50 transition-opacity duration-300 group-hover:opacity-0 z-10" />
-        
+
         <Image
           src={thumbnail}
           alt="Video thumbnail"
@@ -95,7 +126,6 @@ const VideoItem = ({
         </button>
       </div>
 
-      {/* Video player */}
       <div className={`absolute inset-0 transition-opacity duration-300 ${isPlaying ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
         <video
           id={id}
@@ -108,27 +138,53 @@ const VideoItem = ({
           muted={!isPlaying}
         />
         {isPlaying && (
-          <button
-            className="absolute inset-0 flex items-center justify-center bg-transparent cursor-pointer"
-            onClick={() => togglePlay(id)}
-            aria-label="Pause video"
-          />
+          <>
+            <button
+              className="absolute inset-0 flex items-center justify-center bg-transparent cursor-pointer"
+              onClick={() => togglePlay(id)}
+              aria-label="Pause video"
+            >
+              <div className="bg-black/80 border border-white/10 rounded-full flex items-center justify-center w-10 h-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <div className="flex items-center justify-center">
+                  <div className="w-1.5 h-5 bg-white rounded-sm mx-0.5"></div>
+                  <div className="w-1.5 h-5 bg-white rounded-sm mx-0.5"></div>
+                </div>
+              </div>
+            </button>
+
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-4 py-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <div className="flex flex-col gap-2">
+                <input
+                  type="range"
+                  min="0"
+                  max={duration || 100}
+                  value={currentTime}
+                  onChange={handleSeek}
+                  className="w-full h-1 bg-white/30 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-500"
+                />
+
+                <div className="flex justify-between text-xs text-white/80">
+                  <span>{formatTime(currentTime)}</span>
+                  <span>{formatTime(duration)}</span>
+                </div>
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>
   );
 };
 
-// VideoColumn component
-const VideoColumn = ({ 
-  videos, 
-  columnIndex, 
-  hoveredCol, 
-  isAnyPlaying, 
-  playingVideos, 
+const VideoColumn = ({
+  videos,
+  columnIndex,
+  hoveredCol,
+  isAnyPlaying,
+  playingVideos,
   togglePlay,
   onMouseEnter,
-  onMouseLeave 
+  onMouseLeave
 }: {
   videos: typeof VIDEOS,
   columnIndex: number,
@@ -139,12 +195,10 @@ const VideoColumn = ({
   onMouseEnter: () => void,
   onMouseLeave: () => void
 }) => {
-  // Adjust scroll direction based on column index
-  // Make the middle column (index 1) scroll opposite to others
-  const isMiddleColumn = columnIndex === 1; 
+  const isMiddleColumn = columnIndex === 1;
   const scrollDirection = isMiddleColumn ? "scroll-down" : "scroll-up";
   const scrollSpeed = columnIndex === 2 ? "scroll-up-fast" : "";
-  
+
   return (
     <div
       className="relative overflow-hidden h-full"
@@ -155,7 +209,6 @@ const VideoColumn = ({
         className={`flex flex-col gap-4 w-full absolute top-0 left-0 right-0 ${scrollDirection} ${scrollSpeed}`}
         style={{ animationPlayState: hoveredCol === columnIndex || isAnyPlaying ? "paused" : "running" }}
       >
-        {/* Repeat videos to create scrolling effect */}
         {Array.from({ length: 8 }).flatMap((_, setIndex) =>
           videos.map((video, videoIndex) => {
             const uniqueId = `${video.id}-col${columnIndex}-set${setIndex}-${videoIndex}`;
@@ -177,11 +230,10 @@ const VideoColumn = ({
   );
 };
 
-// Mobile VideoItem component
-const MobileVideoItem = ({ video, isPlaying, togglePlay }: { 
-  video: typeof VIDEOS[0], 
-  isPlaying: boolean, 
-  togglePlay: (id: string) => void 
+const MobileVideoItem = ({ video, isPlaying, togglePlay }: {
+  video: typeof VIDEOS[0],
+  isPlaying: boolean,
+  togglePlay: (id: string) => void
 }) => {
   return (
     <div className="flex-none w-[45%] snap-center">
@@ -196,44 +248,37 @@ const MobileVideoItem = ({ video, isPlaying, togglePlay }: {
   );
 };
 
-// Main VideoGrid component
 export default function VideoGrid() {
   const [hoveredCol, setHoveredCol] = useState<number | null>(null);
   const [playingVideos, setPlayingVideos] = useState(new Set<string>());
 
-  // Check if any video is playing
   const isAnyVideoPlaying = playingVideos.size > 0;
 
-  // Toggle video play/pause
   const toggleVideoPlay = (videoId: string) => {
     setPlayingVideos(prev => {
       const newSet = new Set(prev);
-      
+
       if (newSet.has(videoId)) {
         newSet.delete(videoId);
       } else {
-        // Pause other videos
         newSet.clear();
         newSet.add(videoId);
       }
-      
+
       return newSet;
     });
   };
 
-  // Column videos
   const columnVideos = [
-    VIDEOS.slice(0, 2),  // Column 1
-    VIDEOS.slice(2, 4),  // Column 2
-    VIDEOS.slice(4, 6)   // Column 3
+    VIDEOS.slice(0, 2),
+    VIDEOS.slice(2, 4),
+    VIDEOS.slice(4, 6)
   ];
 
-  // Mobile videos
   const mobileVideos = VIDEOS.slice(0, 3);
 
   return (
     <>
-      {/* CSS Animations */}
       <style jsx global>{`
         @keyframes scrollUp {
           0% { transform: translateY(0); }
@@ -251,22 +296,20 @@ export default function VideoGrid() {
         .scroll-down { animation: scrollDown 45s linear infinite; }
         .scroll-up-fast { animation: scrollUpFast 35s linear infinite; }
       `}</style>
-      
-      {/* Mobile View */}
+
       <div className="block lg:hidden w-full h-full overflow-hidden">
         <div className="flex gap-3 overflow-x-auto pb-4 px-4 snap-x snap-mandatory">
           {mobileVideos.map(video => (
-            <MobileVideoItem 
-              key={video.id} 
-              video={video} 
-              isPlaying={playingVideos.has(video.id)} 
-              togglePlay={toggleVideoPlay} 
+            <MobileVideoItem
+              key={video.id}
+              video={video}
+              isPlaying={playingVideos.has(video.id)}
+              togglePlay={toggleVideoPlay}
             />
           ))}
         </div>
       </div>
-      
-      {/* Desktop View */}
+
       <div className="hidden lg:grid grid-cols-3 gap-4 h-screen mr-6">
         {columnVideos.map((videos, index) => (
           <VideoColumn
