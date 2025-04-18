@@ -229,8 +229,8 @@ export default function VideoGrid() {
 
   const mobileVideos = [
     { id: "mobile1", thumbnail: video1.thumbnail, isVertical: true , videoUrl: video1.videoUrl},
-    { id: "mobile2", thumbnail: video1.thumbnail, isVertical: true , videoUrl: video1.videoUrl},
-    { id: "mobile3", thumbnail: video1.thumbnail, isVertical: true , videoUrl: video1.videoUrl},
+    { id: "mobile2", thumbnail: video2.thumbnail, isVertical: true , videoUrl: video2.videoUrl},
+    { id: "mobile3", thumbnail: video3.thumbnail, isVertical: true , videoUrl: video3.videoUrl},
   ];
 
   const createScrollContent = (videos: typeof column1Videos) => {
