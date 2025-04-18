@@ -31,48 +31,46 @@ export const handlePolarOrderPaid = async (
 		throw new Error("Invalid product ID");
 	}
 
-	await db.transaction(async (tx) => {
-		let generationToken: DBGenerationToken | undefined;
-		generationToken = await tx.query.generationTokens.findFirst({
-			where: eq(generationTokens.profileId, externalId),
-		});
+	let generationToken: DBGenerationToken | undefined;
+	generationToken = await db.query.generationTokens.findFirst({
+		where: eq(generationTokens.profileId, externalId),
+	});
+
+	if (!generationToken) {
+		generationToken = (
+			await db
+				.insert(generationTokens)
+				.values({
+					id: uuidv4(),
+					profileId: externalId,
+					createdAt: createdAt.toISOString(),
+					availableTokens: FREE_INITIAL_TOKEN_AMOUNT,
+					initialTokenAmount: FREE_INITIAL_TOKEN_AMOUNT,
+				})
+				.returning()
+		)?.[0];
 
 		if (!generationToken) {
-			generationToken = (
-				await tx
-					.insert(generationTokens)
-					.values({
-						id: uuidv4(),
-						profileId: externalId,
-						createdAt: createdAt.toISOString(),
-						availableTokens: FREE_INITIAL_TOKEN_AMOUNT,
-						initialTokenAmount: FREE_INITIAL_TOKEN_AMOUNT,
-					})
-					.returning()
-			)?.[0];
-
-			if (!generationToken) {
-				throw new Error("Generation token not found");
-			}
+			throw new Error("Generation token not found");
 		}
+	}
 
-		// Create a generation token topup
-		await tx.insert(generationTokenTopups).values({
-			id: uuidv4(),
-			generationTokenId: generationToken.id,
-			amount: tokensToAdd,
-			createdAt: createdAt.toISOString(),
-			polarOrderId: id,
-			profileId: externalId,
-		});
-
-		// Increment the generation token available tokens and initial token amount
-		await tx
-			.update(generationTokens)
-			.set({
-				availableTokens: sql`${generationTokens.availableTokens} + ${tokensToAdd}`,
-				initialTokenAmount: sql`${generationTokens.initialTokenAmount} + ${tokensToAdd}`,
-			})
-			.where(eq(generationTokens.id, generationToken.id));
+	// Create a generation token topup
+	await db.insert(generationTokenTopups).values({
+		id: uuidv4(),
+		generationTokenId: generationToken.id,
+		amount: tokensToAdd,
+		createdAt: createdAt.toISOString(),
+		polarOrderId: id,
+		profileId: externalId,
 	});
+
+	// Increment the generation token available tokens and initial token amount
+	await db
+		.update(generationTokens)
+		.set({
+			availableTokens: sql`${generationTokens.availableTokens} + ${tokensToAdd}`,
+			initialTokenAmount: sql`${generationTokens.initialTokenAmount} + ${tokensToAdd}`,
+		})
+		.where(eq(generationTokens.id, generationToken.id));
 };

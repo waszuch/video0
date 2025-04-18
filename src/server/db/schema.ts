@@ -62,7 +62,7 @@ export const generatedAssets = pgTable("generated_assets", {
 	type: varchar("type", { enum: ["birthdaySong", "birthdayVideo"] }).notNull(),
 	createdAt: timestamp("created_at").notNull(),
 	updatedAt: timestamp("updated_at").notNull(),
-	profileId: uuid("proflie_id")
+	profileId: uuid("profile_id")
 		.notNull()
 		.references(() => profiles.id),
 	data: json("data").$type<GeneratedAssetsDataSchema>().notNull(),
@@ -76,10 +76,8 @@ export const profilesRelations = relations(profiles, ({ many, one }) => ({
 	generatedAssets: many(generatedAssets, {
 		relationName: "ProfileGeneratedAssets",
 	}),
-	generationTokens: one(generationTokens, {
+	generationTokens: many(generationTokens, {
 		relationName: "ProfileGenerationTokens",
-		fields: [profiles.id],
-		references: [generationTokens.profileId],
 	}),
 }));
 
