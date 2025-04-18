@@ -91,7 +91,7 @@ export const tokensRouter = createTRPCRouter({
 					customerExternalId: ctx.user.id,
 					successUrl:
 						env.NODE_ENV === "production"
-							? `https://video0.dev/chat/${input.chatId ?? ""}`
+							? `https://www.video0.dev/chat/${input.chatId ?? ""}`
 							: `http://localhost:3000/chat/${input.chatId ?? ""}`,
 					products: [
 						POLAR_PRODUCT_IDS["3_TOKENS"].id,
@@ -100,7 +100,7 @@ export const tokensRouter = createTRPCRouter({
 					],
 					embedOrigin:
 						env.NODE_ENV === "production"
-							? "https://video0.dev"
+							? "https://www.video0.dev"
 							: "http://localhost:3000",
 				});
 
@@ -116,7 +116,7 @@ export const tokensRouter = createTRPCRouter({
 					customerExternalId: ctx.user.id,
 					successUrl:
 						env.NODE_ENV === "production"
-							? `https://video0.dev/chat/${input.chatId ?? ""}`
+							? `https://www.video0.dev/chat/${input.chatId ?? ""}`
 							: `http://localhost:3000/chat/${input.chatId ?? ""}`,
 					products: [
 						POLAR_PRODUCT_IDS["3_TOKENS"].id,
@@ -125,7 +125,7 @@ export const tokensRouter = createTRPCRouter({
 					],
 					embedOrigin:
 						env.NODE_ENV === "production"
-							? "https://video0.dev"
+							? "https://www.video0.dev"
 							: "http://localhost:3000",
 				});
 
