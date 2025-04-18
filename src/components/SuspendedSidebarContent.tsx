@@ -1,3 +1,4 @@
+"use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -8,7 +9,7 @@ const formatChatTitle = (title: string | null) => {
 	return title.length > 25 ? `${title.substring(0, 22)}...` : title;
 };
 export const SuspendedSidebarContent = () => {
-	const [chats] = api.chats.getChats.useSuspenseQuery();
+	const [chats] = api.chats.getChats.useSuspenseQuery({});
 	const pathname = usePathname();
 	return (
 		<>

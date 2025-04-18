@@ -37,7 +37,6 @@ export const Chat = ({
 			{ chatId: id },
 			{ enabled: !!id, initialData: initialGeneratedAssets },
 		);
-
 	const hasGeneratedAssets =
 		typeof generatedAssets !== "undefined" && generatedAssets.length > 0;
 

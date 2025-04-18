@@ -5,6 +5,10 @@ import PrivatePage from "@/components/AuthProvider/PrivatePage";
 import { Chat } from "@/components/Chat";
 import type { DBMessage } from "@/server/db/schema";
 import { createApi } from "@/trpc/server";
+
+export const revalidate = 0;
+export const dynamic = "force-dynamic";
+
 export default async function Page(props: { params: Promise<{ id: string }> }) {
 	const params = await props.params;
 	const { id } = params;
@@ -18,6 +22,8 @@ export default async function Page(props: { params: Promise<{ id: string }> }) {
 	if (!foundChat) {
 		notFound();
 	}
+
+	console.log(foundChat);
 
 	return (
 		<PrivatePage>
