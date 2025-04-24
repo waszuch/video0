@@ -17,6 +17,8 @@ export const env = createEnv({
 		POLAR_ACCESS_TOKEN: z.string().min(1),
 		POLAR_WEBHOOK_SECRET: z.string().min(1),
 		LUMAAI_API_KEY: z.string().min(1),
+		NOTION_TOKEN: z.string().min(1),
+		NOTION_DATABASE_ID: z.string().min(1),
 	},
 
 	/**
@@ -46,6 +48,8 @@ export const env = createEnv({
 		POLAR_ACCESS_TOKEN: process.env.POLAR_ACCESS_TOKEN,
 		POLAR_WEBHOOK_SECRET: process.env.POLAR_WEBHOOK_SECRET,
 		LUMAAI_API_KEY: process.env.LUMAAI_API_KEY,
+		NOTION_TOKEN: process.env.NOTION_TOKEN,
+		NOTION_DATABASE_ID: process.env.NOTION_DATABASE_ID,
 	},
 	/**
 	 * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

@@ -5,6 +5,8 @@ import VideoGrid from "@/components/VideoGrid";
 import type { ReactNode } from "react";
 import { HeroButton } from "@/components/HeroButton";
 import Image from "next/image";
+import { Client } from "@notionhq/client";
+import { env } from "@/env";
 
 interface NavButtonProps {
   href: string;
@@ -12,6 +14,18 @@ interface NavButtonProps {
   children: ReactNode;
 }
 
+// Initialize Notion client
+const notion = new Client({
+  auth: env.NOTION_TOKEN,
+});
+
+// Define video type
+interface VideoType {
+  id: string;
+  name?: string;
+  thumbnail: string;
+  videoUrl: string;
+}
 
 const NavButton = ({ href, filled = false, children }: NavButtonProps) => (
   <Link
@@ -60,7 +74,46 @@ const Stars = () => (
   </div>
 );
 
+async function fetchVideosFromNotion(): Promise<VideoType[]> {
+  try {
+    const databaseId = process.env.NOTION_DATABASE_ID;
+    
+    if (!databaseId) {
+      console.error("Notion Database ID not configured");
+      return [];
+    }
+
+    // Query the database
+    const response = await notion.databases.query({
+      database_id: databaseId,
+      sorts: [
+        {
+          property: "Name",
+          direction: "ascending",
+        },
+      ],
+    });
+
+    // Transform Notion results to the expected format
+    return response.results.map((page: any) => {
+      const props = page.properties;
+      
+      return {
+        id: props.id?.rich_text?.[0]?.plain_text || page.id,
+        name: props.Name?.title?.[0]?.plain_text || "Untitled",
+        thumbnail: props.thumbnail?.url || "",
+        videoUrl: props.videoUrl?.url || "",
+      };
+    });
+  } catch (error) {
+    console.error("Error fetching from Notion:", error);
+    return [];
+  }
+}
+
 export default async function Home() {
+  const videosFromNotion = await fetchVideosFromNotion();
+  console.log(videosFromNotion);
   return (
     <main className="flex min-h-screen flex-col bg-black text-white font-archivo relative overflow-hidden">
       <MouseEventGlow />
@@ -99,7 +152,7 @@ export default async function Home() {
         </div>
 
         <div className="w-full h-[50vh] lg:h-screen">
-          <VideoGrid />
+          <VideoGrid videos={videosFromNotion} />
         </div>
       </div>
     </main>

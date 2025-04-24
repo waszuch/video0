@@ -12,6 +12,10 @@ const config = {
 				protocol: 'https',
 				hostname: 'fqnqeyjbhlesotcxsibt.supabase.co',
 			},
+			{
+				protocol: 'https',
+				hostname: "pub-bbbd99481c664c73891ed351058e4360.r2.dev",
+			},
 		],
 	},
 	typescript: {

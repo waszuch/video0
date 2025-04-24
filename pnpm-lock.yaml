@@ -11,6 +11,9 @@ importers:
       '@ai-sdk/react':
         specifier: ^1.2.8
         version: 1.2.8(react@19.0.0)(zod@3.24.2)
+      '@notionhq/client':
+        specifier: ^2.3.0
+        version: 2.3.0
       '@openrouter/ai-sdk-provider':
         specifier: ^0.4.5
         version: 0.4.5(zod@3.24.2)
@@ -754,6 +757,10 @@ packages:
   '@noble/hashes@1.7.2':
     resolution: {integrity: sha512-biZ0NUSxyjLLqo6KxEJ1b+C2NAx0wtDoFvCaXHGgUkeHzf3Xc1xKumFKREuT7f7DARNZ/slvYUwFG6B0f2b6hQ==}
     engines: {node: ^14.21.3 || >=16}
+
+  '@notionhq/client@2.3.0':
+    resolution: {integrity: sha512-l7WqTCpQqC+HibkB9chghONQTYcxNQT0/rOJemBfmuKQRTu2vuV8B3yA395iKaUdDo7HI+0KvQaz9687Xskzkw==}
+    engines: {node: '>=12'}
 
   '@openrouter/ai-sdk-provider@0.4.5':
     resolution: {integrity: sha512-gbCOcSjNhyWlLHyYZX2rIFnpJi3C2RXNyyzJj+d6pMRfTS/mdvEEOsU66KxK9H8Qju2i9YRLOn/FdQT26K7bIQ==}
@@ -3231,6 +3238,13 @@ snapshots:
     optional: true
 
   '@noble/hashes@1.7.2': {}
+
+  '@notionhq/client@2.3.0':
+    dependencies:
+      '@types/node-fetch': 2.6.12
+      node-fetch: 2.7.0
+    transitivePeerDependencies:
+      - encoding
 
   '@openrouter/ai-sdk-provider@0.4.5(zod@3.24.2)':
     dependencies:
